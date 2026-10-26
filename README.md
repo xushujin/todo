@@ -4,7 +4,7 @@
 时钟闹钟 + 邮件双通道提醒，生物识别应用锁，以及通过**自建 Git 仓库**完成的双向同步。
 仓库里还带一个纯静态 Web 页面，读取同一个 `data/todos.json` 做展示与操作。
 
-> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.0` · 支持 Android 11（API 30）– Android 16（API 36）
+> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.1` · 支持 Android 11（API 30）– Android 16（API 36）
 
 ---
 
@@ -16,7 +16,7 @@
 | 紧急程度 | `Priority`（低/普通/高/紧急），首页可按紧急程度排序与筛选 |
 | 手机时钟提醒 | `alarm/ReminderScheduler.kt` 使用 `AlarmManager.setAlarmClock`，系统时钟可见，Doze 下仍触发 |
 | 邮件提醒 | 自研 SMTP 客户端 `data/mail/SmtpClient.kt`（EHLO / STARTTLS / AUTH LOGIN / AUTH PLAIN / DATA），MIME 由 `MimeMessageBuilder.kt` 生成 |
-| 配置自建 Git 仓库双向同步 | `data/git/`：GitHub / Gitea(Forgejo) / GitLab 三种内容 API + `SyncEngine` 读-合并-写（乐观并发） |
+| 配置自建 Git 仓库双向同步 | `data/git/`：GitHub / Gitee / Gitea(Forgejo) / GitLab 四种内容 API + `SyncEngine` 读-合并-写（乐观并发） |
 | 自己的 Web 页面读取该仓库 | `web/index.html`（零依赖单文件，同一份 JSON 格式，三方合并） |
 | 生物识别（指纹）解锁 | `security/BiometricGate.kt` + `ui/screens/LockScreen.kt`，冷启动/回前台即锁，锁定时 `FLAG_SECURE` |
 | 拟态风格 + 多套配色 + 全局切换 | `ui/theme/Palette.kt`（5 套）、`ui/theme/TodoTheme.kt`、`ui/components/Neumorphic.kt` |
@@ -200,6 +200,7 @@ CORS/Origin 为 `null` 被拒绝。
 令牌权限：
 
 * GitHub（fine-grained PAT）：Repository access 选单个仓库，Permissions → Contents: **Read and write**
+* Gitee：私人令牌，勾选 `projects`（仓库读写）；仓库默认分支常见为 `master`，按实际填写
 * Gitea / Forgejo：`write:repository`
 * GitLab：`api`（或 `read_repository` + `write_repository`）
 
@@ -214,7 +215,8 @@ node tools/web_smoke_test.mjs http://127.0.0.1:8765
 ```
 
 冒烟测试在 Node VM 里跑页面真实脚本、用真实 `fetch` 打模拟服务，覆盖：空仓库首次写入、
-schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 重试"、完成/删除写入墓碑。
+schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 重试"、完成/删除写入墓碑，
+以及 Gitee 分支（`POST` 新建、数组响应解析、`PUT` 更新）。
 
 ---
 
@@ -224,12 +226,12 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 * 单文件、全量快照：`{ schemaVersion, generatedAt, writer, lists[], items[] }`
 * 合并规则：`updatedAt` 大者胜；相同则 `deviceId` 字典序大者胜；删除是带 `deletedAt` 的普通更新（墓碑），
   所以"删除"和"编辑"天然按时间比较，不会被旧数据复活
-* 并发写：写入时携带远端版本令牌（GitHub/Gitea 的 blob `sha`、GitLab 的 `last_commit_id`）；
+* 并发写：写入时携带远端版本令牌（GitHub / Gitee / Gitea 的 blob `sha`、GitLab 的 `last_commit_id`）；
   版本不匹配返回 409/400 → 重新读取 → 重新合并 → 重试（最多 3 次）
 * 冲突计数：两侧都在上次同步后改动过同一条记录时，`SyncReport.conflicts` 会加一并显示在同步页
 * 墓碑清理：设置页可清理 30 天前的删除记录（清理前请确认所有设备都已同步）
 
-同步是"文件级"的，不实现 git pack 协议；因此需要目标平台提供内容读写 API（GitHub / Gitea / GitLab 均可自建）。
+同步是"文件级"的，不实现 git pack 协议；因此需要目标平台提供内容读写 API（GitHub / Gitee / Gitea / GitLab 均可自建）。
 
 ---
 

@@ -4,6 +4,10 @@ import app.todo.core.codec.Base64Codec
 
 enum class GitProviderKind(val label: String, val defaultBaseUrl: String) {
     GITHUB("GitHub", "https://api.github.com"),
+
+    // Gitee (码云) exposes a contents API shaped like GitHub's, but under /api/v5 and
+    // with the token passed as a query parameter instead of an Authorization header.
+    GITEE("Gitee", "https://gitee.com"),
     GITEA("Gitea / Forgejo", "https://git.example.com"),
     GITLAB("GitLab", "https://gitlab.com"),
     ;

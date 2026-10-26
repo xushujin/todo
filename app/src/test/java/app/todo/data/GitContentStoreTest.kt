@@ -6,7 +6,7 @@ import app.todo.core.net.HttpRequest
 import app.todo.core.net.HttpResponse
 import app.todo.data.git.GitAuthException
 import app.todo.data.git.GitConflictException
-import app.todo.data.git.GitHubContentStore
+import app.todo.data.git.ContentsApiStore
 import app.todo.data.git.GitLabContentStore
 import app.todo.data.git.GitProviderKind
 import app.todo.data.git.SyncConfig
@@ -40,7 +40,7 @@ class GitContentStoreTest {
             "content" to Base64Codec.encode("{\"schemaVersion\":1}").chunked(8).joinToString("\\n"),
         )
         val transport = RecordingTransport { HttpResponse(200, body.toByteArray()) }
-        val store = GitHubContentStore(transport, GitProviderKind.GITHUB)
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
 
         val file = runBlocking { store.read(github) }
 
@@ -58,7 +58,7 @@ class GitContentStoreTest {
     @Test
     fun giteaUsesTheApiV1Prefix() {
         val transport = RecordingTransport { HttpResponse(404, ByteArray(0)) }
-        val store = GitHubContentStore(transport, GitProviderKind.GITEA)
+        val store = ContentsApiStore(transport, GitProviderKind.GITEA)
         val config = github.copy(provider = GitProviderKind.GITEA, baseUrl = "https://git.example.com")
 
         val file = runBlocking { store.read(config) }
@@ -80,7 +80,7 @@ class GitContentStoreTest {
                 HttpResponse(404, ByteArray(0))
             }
         }
-        val store = GitHubContentStore(transport, GitProviderKind.GITHUB)
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
 
         val written = runBlocking {
             store.write(github, "{\"a\":1}", expectedRevision = "oldsha", message = "todo: sync")
@@ -101,7 +101,7 @@ class GitContentStoreTest {
         val transport = RecordingTransport {
             HttpResponse(201, """{"content":{"sha":"created"}}""".toByteArray())
         }
-        val store = GitHubContentStore(transport, GitProviderKind.GITHUB)
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
 
         runBlocking { store.write(github, "x", expectedRevision = null, message = "create") }
 
@@ -112,7 +112,7 @@ class GitContentStoreTest {
     @Test
     fun staleRevisionIsReportedAsConflict() {
         val transport = RecordingTransport { HttpResponse(409, """{"message":"sha does not match"}""".toByteArray()) }
-        val store = GitHubContentStore(transport, GitProviderKind.GITHUB)
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
         assertThrows(GitConflictException::class.java) {
             runBlocking { store.write(github, "x", "old", "msg") }
         }
@@ -121,7 +121,7 @@ class GitContentStoreTest {
     @Test
     fun unauthorizedIsReportedAsAuthError() {
         val transport = RecordingTransport { HttpResponse(401, """{"message":"Bad credentials"}""".toByteArray()) }
-        val store = GitHubContentStore(transport, GitProviderKind.GITHUB)
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
         assertThrows(GitAuthException::class.java) { runBlocking { store.read(github) } }
     }
 
@@ -130,7 +130,7 @@ class GitContentStoreTest {
         val transport = RecordingTransport {
             HttpResponse(200, """{"sha":"abc","encoding":"none","content":"","path":"data/todos.json"}""".toByteArray())
         }
-        val store = GitHubContentStore(transport, GitProviderKind.GITHUB)
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
         val error = assertThrows(app.todo.data.git.GitException::class.java) {
             runBlocking { store.read(github) }
         }
@@ -191,16 +191,99 @@ class GitContentStoreTest {
     @Test
     fun missingFileReadsAsNullOnBothProviders() {
         val transport = RecordingTransport { HttpResponse(404, ByteArray(0)) }
-        val githubStore = GitHubContentStore(transport, GitProviderKind.GITHUB)
+        val githubStore = ContentsApiStore(transport, GitProviderKind.GITHUB)
         val gitlabStore = GitLabContentStore(transport)
         assertNull(runBlocking { githubStore.read(github) })
         assertNull(runBlocking { gitlabStore.read(github.copy(baseUrl = "https://gitlab.com")) })
     }
 
     @Test
+    fun giteeUsesApiV5AndQueryToken() {
+        val body = """{"type":"file","path":"data/todos.json","sha":"blob1","encoding":"base64","content":"aGVsbG8="}"""
+        val transport = RecordingTransport { HttpResponse(200, body.toByteArray()) }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+        val config = github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com")
+
+        val file = runBlocking { store.read(config) }
+
+        assertEquals("hello", file?.content)
+        assertEquals("blob1", file?.revision)
+        assertEquals(
+            "https://gitee.com/api/v5/repos/hatim/todo/contents/data/todos.json?ref=main&access_token=tok",
+            transport.requests.single().url,
+        )
+        assertNull(transport.requests.single().headers["Authorization"])
+    }
+
+    @Test
+    fun giteeAcceptsArrayResponseFromRead() {
+        val body = """[{"type":"file","path":"data/todos.json","sha":"blob-array","encoding":"base64","content":"aGVsbG8="}]"""
+        val transport = RecordingTransport { HttpResponse(200, body.toByteArray()) }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+        val config = github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com")
+
+        val file = runBlocking { store.read(config) }
+
+        assertEquals("hello", file?.content)
+        assertEquals("blob-array", file?.revision)
+    }
+
+    @Test
+    fun giteeCreatesWithPostAndUpdatesWithPut() {
+        var calls = 0
+        val transport = RecordingTransport { request ->
+            calls++
+            HttpResponse(
+                if (request.method == "POST") 201 else 200,
+                """{"content":{"sha":"rev-$calls"},"commit":{"sha":"commit-$calls"}}""".toByteArray(),
+            )
+        }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+        val config = github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com")
+
+        val created = runBlocking { store.write(config, "one", expectedRevision = null, message = "create") }
+        val updated = runBlocking { store.write(config, "two", expectedRevision = "rev-1", message = "update") }
+
+        assertEquals("rev-1", created.revision)
+        assertEquals("rev-2", updated.revision)
+        assertEquals(listOf("POST", "PUT"), transport.requests.map { it.method })
+
+        val createBody = JsonValue.parse(transport.requests[0].body?.toString(Charsets.UTF_8).orEmpty())
+        assertEquals("tok", createBody.str("access_token"))
+        assertTrue(createBody["sha"] == null)
+
+        val updateBody = JsonValue.parse(transport.requests[1].body?.toString(Charsets.UTF_8).orEmpty())
+        assertEquals("rev-1", updateBody.str("sha"))
+        assertEquals("two", Base64Codec.decodeToString(updateBody.str("content").orEmpty()))
+    }
+
+    @Test
+    fun giteeStaleShaIsReportedAsConflict() {
+        val transport = RecordingTransport { HttpResponse(400, """{"message":"sha is not match"}""".toByteArray()) }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+        val config = github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com")
+
+        assertThrows(GitConflictException::class.java) {
+            runBlocking { store.write(config, "x", expectedRevision = "stale", message = "update") }
+        }
+    }
+
+    @Test
+    fun directoryPathIsRejectedWithAClearMessage() {
+        val body = """{"type":"dir","path":"data","sha":"tree1"}"""
+        val transport = RecordingTransport { HttpResponse(200, body.toByteArray()) }
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
+
+        val error = assertThrows(app.todo.data.git.GitException::class.java) {
+            runBlocking { store.read(github) }
+        }
+        assertTrue(error.message.orEmpty().contains("directory"))
+    }
+
+    @Test
     fun requestHeadersDoNotLeakAcrossProviders() {
         val transport = RecordingTransport { HttpResponse(404, ByteArray(0)) }
-        runBlocking { GitHubContentStore(transport, GitProviderKind.GITHUB).read(github) }
+        runBlocking { ContentsApiStore(transport, GitProviderKind.GITHUB).read(github) }
         runBlocking { GitLabContentStore(transport).read(github.copy(baseUrl = "https://gitlab.com")) }
         assertTrue(transport.requests[0].headers.containsKey("Authorization"))
         assertTrue(transport.requests[1].headers.containsKey("PRIVATE-TOKEN"))

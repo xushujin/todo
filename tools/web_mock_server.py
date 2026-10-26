@@ -27,9 +27,12 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WEB_DIR = ROOT / "web"
 
-STATE: dict[str, object] = {"content": None, "sha": None, "commits": [], "writes": 0}
+STATE: dict[str, object] = {"content": None, "sha": None, "commits": [], "writes": 0, "methods": []}
 
-CONTENTS_PATH = re.compile(r"^/repos/[^/]+/[^/]+/contents/(?P<path>.+?)(\?.*)?$")
+# Accepts the GitHub layout (/repos/...) and the Gitee/Gitea prefixes (/api/v5, /api/v1).
+CONTENTS_PATH = re.compile(
+    r"^(?P<prefix>/api/(?:v5|v1))?/repos/[^/]+/[^/]+/contents/(?P<path>.+?)(?:\?.*)?$"
+)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -50,21 +53,27 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 (http.server API)
         if self.path == "/__state":
             return self._json(200, STATE)
-        if CONTENTS_PATH.match(self.path):
+        if self.path == "/__reset":
+            STATE.update({"content": None, "sha": None, "commits": [], "writes": 0, "methods": []})
+            return self._json(200, STATE)
+        match = CONTENTS_PATH.match(self.path)
+        if match:
             if STATE["content"] is None:
                 return self._json(404, {"message": "Not Found"})
             raw = str(STATE["content"]).encode("utf-8")
-            return self._json(
-                200,
-                {
-                    "name": "todos.json",
-                    "path": "data/todos.json",
-                    "sha": STATE["sha"],
-                    "size": len(raw),
-                    "encoding": "base64",
-                    "content": base64.b64encode(raw).decode("ascii"),
-                },
-            )
+            payload = {
+                "name": "todos.json",
+                "path": "data/todos.json",
+                "type": "file",
+                "sha": STATE["sha"],
+                "size": len(raw),
+                "encoding": "base64",
+                "content": base64.b64encode(raw).decode("ascii"),
+            }
+            # Gitee documents this endpoint as an array response; mirror that.
+            if match.group("prefix") == "/api/v5":
+                return self._json(200, [payload])
+            return self._json(200, payload)
         return super().do_GET()
 
     def do_PUT(self) -> None:  # noqa: N802
@@ -80,6 +89,9 @@ class Handler(SimpleHTTPRequestHandler):
         expected = payload.get("sha")
         if STATE["sha"] is not None and expected != STATE["sha"]:
             return self._json(409, {"message": "sha does not match"})
+        methods = STATE["methods"]
+        assert isinstance(methods, list)
+        methods.append(self.command)
         content = base64.b64decode(payload["content"]).decode("utf-8")
         sha = hashlib.sha1(content.encode("utf-8")).hexdigest()
         STATE["content"] = content
@@ -88,7 +100,10 @@ class Handler(SimpleHTTPRequestHandler):
         commits = STATE["commits"]
         assert isinstance(commits, list)
         commits.append({"message": payload["message"], "sha": sha})
-        return self._json(200, {"content": {"sha": sha, "path": "data/todos.json"}})
+        return self._json(200, {"content": {"sha": sha, "path": "data/todos.json"}, "commit": {"sha": sha}})
+
+    def do_POST(self) -> None:  # noqa: N802 (Gitee creates files with POST)
+        self.do_PUT()
 
 
 def main() -> None:

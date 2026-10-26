@@ -87,17 +87,19 @@ catch (conflict) { 重新 read → 重新 merge → 重试，最多 3 次 }
 
 ## 4. 三家平台的差异（`data/git/*ContentStore.kt`）
 
-| | GitHub | Gitea / Forgejo | GitLab |
-| --- | --- | --- | --- |
-| 读取 | `GET /repos/{o}/{r}/contents/{path}?ref=` | `GET /api/v1/repos/{o}/{r}/contents/{path}?ref=` | `GET /api/v4/projects/{o%2Fr}/repository/files/{path}?ref=` |
-| 写入 | `PUT` 同一 URL | `PUT` 同一 URL | 新建 `POST` / 更新 `PUT` |
-| 鉴权 | `Authorization: Bearer <pat>` | `Authorization: token <pat>` | `PRIVATE-TOKEN: <pat>` |
-| 版本令牌 | `sha`（blob） | `sha`（blob） | `last_commit_id` |
-| 冲突状态码 | 409 | 409 | 400 |
+| | GitHub | Gitee | Gitea / Forgejo | GitLab |
+| --- | --- | --- | --- | --- |
+| 读取 | `GET /repos/{o}/{r}/contents/{path}?ref=` | `GET /api/v5/repos/{o}/{r}/contents/{path}?ref=&access_token=` | `GET /api/v1/repos/{o}/{r}/contents/{path}?ref=` | `GET /api/v4/projects/{o%2Fr}/repository/files/{path}?ref=` |
+| 写入 | `PUT` 同一 URL | 新建 `POST` / 更新 `PUT` | `PUT` 同一 URL | 新建 `POST` / 更新 `PUT` |
+| 鉴权 | `Authorization: Bearer <pat>` | `access_token` 查询参数（body 里也带一份） | `Authorization: token <pat>` | `PRIVATE-TOKEN: <pat>` |
+| 版本令牌 | `sha`（blob） | `sha`（blob） | `sha`（blob） | `last_commit_id` |
+| 冲突状态码 | 409 | 400 | 409 | 400 |
 
 * 内容一律 base64（GitHub 返回的 base64 每 60 字符带换行，解码器会忽略空白）
 * 新建文件时**不发送** `sha` / `last_commit_id` 字段
-* 单文件上限：GitHub Contents API 1 MB，超出会返回明确错误而不是静默截断
+* 单文件上限：Contents API 约 1 MB，超出会返回明确错误而不是静默截断
+* Gitee 的读取接口在文档里标注返回数组，解析器同时接受对象与数组，并按 `path` 选中目标文件
+* Gitee 仓库默认分支常见为 `master`，配置时按实际分支填写
 
 ## 5. Web 页面
 

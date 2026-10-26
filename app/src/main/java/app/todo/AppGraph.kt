@@ -11,7 +11,7 @@ import app.todo.core.time.WallClock
 import app.todo.data.db.TodoDao
 import app.todo.data.db.TodoDb
 import app.todo.data.git.GitContentStore
-import app.todo.data.git.GitHubContentStore
+import app.todo.data.git.ContentsApiStore
 import app.todo.data.git.GitLabContentStore
 import app.todo.data.git.GitProviderKind
 import app.todo.data.git.SyncConfig
@@ -64,7 +64,10 @@ class AppGraph(context: Context) {
     )
 
     private fun contentStore(kind: GitProviderKind): GitContentStore = when (kind) {
-        GitProviderKind.GITHUB, GitProviderKind.GITEA -> GitHubContentStore(transport, kind)
+        GitProviderKind.GITHUB,
+        GitProviderKind.GITEE,
+        GitProviderKind.GITEA,
+        -> ContentsApiStore(transport, kind)
         GitProviderKind.GITLAB -> GitLabContentStore(transport)
     }
 }

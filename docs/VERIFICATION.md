@@ -17,10 +17,10 @@
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 全量构建 | `./gradlew clean assembleDebug assembleRelease testDebugUnitTest lintDebug` | **BUILD SUCCESSFUL**，输出中 `w:` / `e:` / `warning` 行数为 **0** |
-| 单元测试 | 同上 | **79 个用例 / 11 个测试类，0 失败 0 跳过** |
+| 单元测试 | 同上 | **84 个用例 / 11 个测试类，0 失败 0 跳过** |
 | Android Lint | `./gradlew lintDebug` | **0 issue**（`app/build/reports/lint-results-debug.xml` 为空） |
 | 迁移校验 | `python3 tools/verify_schema.py` | **passed**（2 个迁移文件、列与索引一致、无破坏性语句） |
-| Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **15 项检查全部通过** |
+| Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **21 项检查全部通过**（含 Gitee 分支） |
 | Debug APK | `assembleDebug` | 29 MB，`app/build/outputs/apk/debug/app-debug.apk` |
 | Release APK | `assembleRelease`（本地 keystore 通道） | 2.9 MB，`apksigner verify` 通过，`zipalign -c 4` 通过 |
 
@@ -48,9 +48,10 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | SMTP 失败路径 | 服务器返回 `535` | `SmtpClientTest.surfacesAuthenticationFailures` |
 | MIME 头 | RFC 2047 编码主题、CRLF 注入清洗、76 字符折行、RFC 5322 日期格式 | `MimeMessageBuilderTest`（4 个用例） |
 | 数据库迁移 | **真实 SQLite**（Python `sqlite3`）执行 `schema/*.sql`，比较"全新安装"与"v1→v2 升级"的列与索引 | `tools/verify_schema.py` 输出：`todo_lists 8 列`、`todo_items 15 列`、4 个索引一致 |
-| Web 页面 | Node VM 执行页面真实脚本 + 真实 `fetch` 打 `tools/web_mock_server.py` | 空仓库首写、schema 字段、重新加载、过期令牌触发合并重试、完成/删除写墓碑 |
+| Web 页面 | Node VM 执行页面真实脚本 + 真实 `fetch` 打 `tools/web_mock_server.py` | 空仓库首写、schema 字段、重新加载、过期令牌触发合并重试、完成/删除写墓碑；Gitee：`POST` 新建、数组响应解析、`PUT` 更新 |
+| Gitee 接口契约 | 对照官方 OpenAPI 描述 `https://gitee.com/api/v5/swagger_doc.json` | 路径 `/api/v5/repos/{owner}/{repo}/contents/{path}`、`access_token` 查询参数、创建 `POST` / 更新 `PUT` 且 `sha` 必填、返回 `content.sha` |
 
-## 4. 单元测试清单（79 用例）
+## 4. 单元测试清单（84 用例）
 
 | 测试类 | 覆盖 |
 | --- | --- |
@@ -63,7 +64,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | `MimeMessageBuilderTest` | 主题编码、头注入、base64 折行、日期格式 |
 | `SmtpClientTest` | 真实 SMTP 会话、无认证路径、认证失败、配置校验 |
 | `HttpTransportTest` | 真实 socket HTTP、方法/请求体、404、拒绝明文 HTTP |
-| `GitContentStoreTest` | GitHub/Gitea/GitLab 的 URL、鉴权头、base64 载荷、`sha`/`last_commit_id`、409/400 冲突、404、1 MB 限制 |
+| `GitContentStoreTest` | GitHub/Gitee/Gitea/GitLab 的 URL、鉴权方式、base64 载荷、`sha`/`last_commit_id`、409/400 冲突、404、1 MB 限制、Gitee 数组响应 |
 | `SyncEngineTest` | 首次推送、纯拉取、无变化不写、冲突后重读重试、超过重试上限、非法 schema、非法配置 |
 
 ## 5. 明确**没有**验证的部分
@@ -74,9 +75,9 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
    深色主题下的对比度均未经视觉确认。
 2. **生物识别解锁**：`BiometricGate` 需要真实设备录入指纹/凭证；未验证系统对话框、取消/失败回调、
    `FLAG_SECURE` 效果，以及"设备无生物识别时不锁定"的分支（逻辑已写，未实机执行）。
-3. **真实 Git 仓库**：没有对 github.com / 自建 Gitea / GitLab 发起真实请求（无令牌、无外网账号）。
-   三家平台的 URL/头/载荷是按官方文档 + 样本构造的，协议细节（例如 Gitea 对 `Bearer` 的兼容性、
-   GitLab 400 的具体触发条件）未经真实服务确认。
+3. **真实 Git 仓库**：没有对 github.com / gitee.com / 自建 Gitea / GitLab 发起真实请求（无令牌、无外网账号）。
+   四家平台的 URL/头/载荷是按官方文档 + 样本构造的，协议细节（例如 Gitee 的 `access_token` 走查询参数
+   是否对 POST/PUT 同样生效、Gitea 对 `Bearer` 的兼容性、GitLab 400 的具体触发条件）未经真实服务确认。
 4. **SMTP 真实投递**：只验证了明文 SMTP 会话；`STARTTLS` 与隐式 TLS（465）的握手、真实服务商认证、
    中文主题在邮件客户端中的显示，均未验证。
 5. **闹钟与通知**：`setAlarmClock` 的实际触发时间、Doze 表现、开机重排、通知渠道与点击跳转，未在设备上验证。

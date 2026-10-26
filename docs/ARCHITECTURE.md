@@ -13,7 +13,7 @@ domain/        纯 Kotlin：模型、查询、合并、仓储接口（可在 JVM
   └─ sync/     SyncDocument（格式）、SnapshotMerge（算法）
 data/          平台相关实现
   ├─ db/       手写 SQLiteOpenHelper + DAO + 迁移 SQL 资源
-  ├─ git/      三家内容 API、SyncEngine
+  ├─ git/      四家内容 API（GitHub/Gitee/Gitea/GitLab）、SyncEngine
   ├─ mail/     SMTP 客户端、MIME 构造
   └─ prefs/    SettingsStore（唯一设置源）、Keystore 加密
 alarm/         AlarmManager 调度、通知、开机重排、提醒投递

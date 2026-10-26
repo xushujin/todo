@@ -157,6 +157,7 @@
       <label class="field">服务商
         <select id="provider">
           <option value="github">GitHub</option>
+          <option value="gitee">Gitee</option>
           <option value="gitea">Gitea / Forgejo</option>
           <option value="gitlab">GitLab</option>
         </select>
@@ -338,19 +339,35 @@ const encPath = (path) => path.split("/").filter(Boolean).map(encodeURIComponent
  * Provider adapters — same file, three different REST shapes
  * ------------------------------------------------------------------ */
 
-function apiUrl(config) {
+const CONTENTS_PREFIX = { github: "/repos", gitee: "/api/v5/repos", gitea: "/api/v1/repos" };
+
+function contentsUrl(config, withRef) {
   const base = config.baseUrl.replace(/\/+$/, "");
+  const path = encPath(config.path);
+  const url = `${base}${CONTENTS_PREFIX[config.provider]}/${encodeURIComponent(config.owner)}/` +
+    `${encodeURIComponent(config.repo)}/contents/${path}`;
+  const params = [];
+  if (withRef) params.push(`ref=${encodeURIComponent(config.branch)}`);
+  // Gitee authenticates with a query parameter instead of an Authorization header.
+  if (config.provider === "gitee") params.push(`access_token=${encodeURIComponent(config.token)}`);
+  return params.length ? `${url}?${params.join("&")}` : url;
+}
+
+function apiUrl(config) {
   if (config.provider === "gitlab") {
+    const base = config.baseUrl.replace(/\/+$/, "");
     const project = encodeURIComponent(`${config.owner}/${config.repo}`);
     return `${base}/api/v4/projects/${project}/repository/files/${encSegment(config.path)}?ref=${encodeURIComponent(config.branch)}`;
   }
-  const prefix = config.provider === "github" ? "/repos" : "/api/v1/repos";
-  return `${base}${prefix}/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encPath(config.path)}?ref=${encodeURIComponent(config.branch)}`;
+  return contentsUrl(config, true);
 }
 
 function apiHeaders(config) {
   if (config.provider === "gitlab") {
     return { "PRIVATE-TOKEN": config.token, Accept: "application/json" };
+  }
+  if (config.provider === "gitee") {
+    return { Accept: "application/json" };
   }
   return {
     Authorization: config.provider === "github" ? `Bearer ${config.token}` : `token ${config.token}`,
@@ -368,11 +385,15 @@ async function readRemote(config) {
     const detail = await response.text();
     throw new Error(`读取失败（${response.status}）${detail.slice(0, 160)}`);
   }
-  const data = await response.json();
+  const raw = await response.json();
   if (config.provider === "gitlab") {
-    return { content: fromBase64(data.content), revision: data.last_commit_id };
+    return { content: fromBase64(raw.content), revision: raw.last_commit_id };
   }
-  if (!data.content) throw new Error("文件过大或为空，无法通过 Contents API 读取");
+  // Gitee documents this endpoint as returning an array; a single object is also possible.
+  const data = Array.isArray(raw)
+    ? raw.find((entry) => entry.path === config.path) || raw[0]
+    : raw;
+  if (!data || !data.content) throw new Error("文件过大或为空，无法通过 Contents API 读取");
   return { content: fromBase64(data.content), revision: data.sha };
 }
 
@@ -393,13 +414,15 @@ async function writeRemote(config, content, revision, message) {
     };
     if (revision) body.last_commit_id = revision;
   } else {
-    url = apiUrl(config).replace(/\?ref=.*$/, "");
+    url = contentsUrl(config, false);
+    if (config.provider === "gitee") method = revision ? "PUT" : "POST";
     body = {
       message,
       content: toBase64(content),
       branch: config.branch,
     };
     if (revision) body.sha = revision;
+    if (config.provider === "gitee") body.access_token = config.token;
   }
 
   const response = await fetch(url, {
@@ -1026,7 +1049,7 @@ function setBusy(busy) {
     render();
   };
   $("provider").onchange = () => {
-    const defaults = { github: "https://api.github.com", gitea: "", gitlab: "https://gitlab.com" };
+    const defaults = { github: "https://api.github.com", gitee: "https://gitee.com", gitea: "", gitlab: "https://gitlab.com" };
     const current = $("baseUrl").value.trim();
     if (!current || Object.values(defaults).includes(current)) {
       $("baseUrl").value = defaults[$("provider").value] || "";

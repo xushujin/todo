@@ -188,6 +188,35 @@ await run("deleteItem(state.doc.items[0])");
 state = await serverState();
 check("delete writes a tombstone", typeof JSON.parse(state.content).items[0].deletedAt === "number");
 
+// 6. Gitee: /api/v5 layout, array response, POST to create, PUT to update.
+await fetch(`${baseUrl}/__reset`);
+run("state.doc = null; state.base = null; state.revision = null;");
+setValue("provider", "gitee");
+setValue("baseUrl", baseUrl);
+setValue("owner", "demo");
+setValue("repo", "todo");
+setValue("branch", "master");
+setValue("path", "data/todos.json");
+setValue("token", "gitee-token");
+
+await run("connect()");
+check("gitee: connect on empty repo", text("status").includes("还没有文件"), text("status"));
+
+setValue("new-title", "gitee 任务");
+await run("addTask()");
+state = await serverState();
+check("gitee: create uses POST", (state.methods || []).join(",") === "POST", JSON.stringify(state.methods));
+check("gitee: content written", JSON.parse(state.content).items[0].title === "gitee 任务");
+
+// Re-read (array response) then update -> must be PUT with sha.
+await run("load(true)");
+check("gitee: array response parsed", run("state.doc.items.length") === 1, String(run("state.doc.items.length")));
+run('state.doc.items[0].title = "gitee 改"; touch(state.doc.items[0])');
+await run('persist("gitee update")');
+state = await serverState();
+check("gitee: update uses PUT", (state.methods || []).join(",") === "POST,PUT", JSON.stringify(state.methods));
+check("gitee: edit reached server", JSON.parse(state.content).items[0].title === "gitee 改");
+
 if (failures.length > 0) {
   console.error(`\n${failures.length} check(s) failed`);
   process.exit(1);
