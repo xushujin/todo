@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Todo · Web</title>
+<meta name="color-scheme" content="light dark" />
+<style>
+  :root {
+    --bg: #e6e9ef;
+    --surface: #edf0f5;
+    --sunken: #dce1e9;
+    --accent: #4c5bd4;
+    --on-accent: #ffffff;
+    --text: #2c3140;
+    --muted: #6b7385;
+    --light: #ffffff;
+    --dark: #a9b1c3;
+    --danger: #d1495b;
+    --success: #2e9e6b;
+    --warning: #d98324;
+    --radius: 20px;
+  }
+  body[data-theme="mint"] { --bg:#e3efe8; --surface:#eaf4ee; --sunken:#d5e5db; --accent:#2f8f6b; --text:#1f3a2e; --muted:#5d7a6c; --light:#f9fffb; --dark:#a8c4b5; --danger:#c1464f; }
+  body[data-theme="sand"] { --bg:#f0e7dc; --surface:#f6eee5; --sunken:#e4d9cb; --accent:#b4693a; --text:#3a2e24; --muted:#7a6a5a; --light:#fffaf4; --dark:#c6b49e; --danger:#b4443c; }
+  body[data-theme="lavender"] { --bg:#e8e4f3; --surface:#efecf9; --sunken:#dcd7ec; --accent:#6b5bd4; --text:#2f2a45; --muted:#6e688a; --light:#fcfaff; --dark:#b6afce; --danger:#c1445f; }
+  body[data-theme="midnight"] { --bg:#23262e; --surface:#2a2e38; --sunken:#1d2027; --accent:#7c8cff; --on-accent:#0e1116; --text:#e8ebf2; --muted:#9aa3b5; --light:#353b47; --dark:#12141a; --danger:#ff6b7a; --success:#4fd1a1; --warning:#ffb86b; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    min-height: 100vh;
+    padding: 24px 16px 80px;
+    transition: background .25s ease, color .25s ease;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: -6px -6px 14px var(--light), 6px 6px 14px var(--dark);
+    padding: 18px;
+  }
+  .sunken {
+    background: var(--sunken);
+    border-radius: 14px;
+    box-shadow: inset -3px -3px 6px var(--light), inset 3px 3px 6px var(--dark);
+  }
+
+  header.bar { display: flex; align-items: center; gap: 12px; }
+  header.bar h1 { font-size: 26px; margin: 0; letter-spacing: -.4px; }
+  header.bar .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .grow { flex: 1; }
+
+  button {
+    font: inherit; color: var(--text); cursor: pointer;
+    background: var(--surface); border: 0; border-radius: 14px;
+    padding: 10px 16px;
+    box-shadow: -3px -3px 7px var(--light), 3px 3px 7px var(--dark);
+    transition: transform .08s ease, box-shadow .12s ease, background .2s ease;
+  }
+  button:active { transform: translateY(1px); box-shadow: -1px -1px 4px var(--light), 1px 1px 4px var(--dark); }
+  button.primary { background: var(--accent); color: var(--on-accent); }
+  button.ghost { box-shadow: none; background: transparent; padding: 8px 10px; }
+  button.icon { width: 40px; height: 40px; padding: 0; border-radius: 50%; display: grid; place-items: center; }
+  button.danger { color: var(--danger); }
+  button[disabled] { opacity: .55; cursor: progress; }
+
+  input, select, textarea {
+    font: inherit; color: var(--text); width: 100%;
+    background: var(--sunken); border: 0; border-radius: 12px;
+    padding: 10px 12px; outline: none;
+    box-shadow: inset -2px -2px 5px var(--light), inset 2px 2px 5px var(--dark);
+  }
+  input:focus, select:focus, textarea:focus { box-shadow: inset -2px -2px 5px var(--light), inset 2px 2px 5px var(--dark), 0 0 0 2px var(--accent); }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .chip {
+    border-radius: 999px; padding: 7px 14px; font-size: 12px;
+    box-shadow: -2px -2px 5px var(--light), 2px 2px 5px var(--dark);
+    background: var(--surface); color: var(--muted);
+  }
+  .chip.on { background: var(--accent); color: var(--on-accent); }
+  .chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+
+  ul.tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  li.task {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--surface); border-radius: 18px; padding: 14px;
+    box-shadow: -5px -5px 11px var(--light), 5px 5px 11px var(--dark);
+  }
+  li.task.done { opacity: .62; }
+  .check {
+    width: 32px; height: 32px; min-width: 32px; border-radius: 50%;
+    background: var(--surface); border: 0; cursor: pointer;
+    box-shadow: -3px -3px 6px var(--light), 3px 3px 6px var(--dark);
+    display: grid; place-items: center; color: transparent; font-size: 15px;
+  }
+  .check.on { background: var(--accent); color: var(--on-accent); }
+  .task .body { flex: 1; min-width: 0; }
+  .task .title { font-size: 15px; line-height: 1.4; word-break: break-word; }
+  .task.done .title { text-decoration: line-through; color: var(--muted); }
+  .task .meta { margin-top: 4px; font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .task .meta .urgent { color: var(--danger); }
+  .task .meta .high { color: var(--warning); }
+  .task .meta .low { color: var(--success); }
+  .actions { display: flex; gap: 6px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 28px 12px; font-size: 14px; }
+  .status { font-size: 12px; color: var(--muted); min-height: 16px; }
+  .status.error { color: var(--danger); }
+  .status.ok { color: var(--success); }
+  .hidden { display: none !important; }
+  .add-form { display: grid; gap: 10px; grid-template-columns: 1fr auto; align-items: end; }
+  .add-form .inputs { display: grid; gap: 10px; grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .add-form .inputs { grid-template-columns: 1fr 150px 150px; } }
+  dialog {
+    border: 0; border-radius: var(--radius); padding: 20px; background: var(--surface); color: var(--text);
+    box-shadow: -8px -8px 20px var(--light), 8px 8px 20px var(--dark);
+    width: min(520px, calc(100vw - 32px));
+  }
+  dialog::backdrop { background: rgba(0,0,0,.35); backdrop-filter: blur(2px); }
+  h2 { font-size: 18px; margin: 0 0 14px; }
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body data-theme="cloud">
+<div class="wrap">
+
+  <div class="card">
+    <header class="bar">
+      <div class="grow">
+        <h1>Todo</h1>
+        <div class="sub" id="summary">未连接仓库</div>
+      </div>
+      <select id="theme" title="主题" style="width:120px">
+        <option value="cloud">云白</option>
+        <option value="mint">薄荷</option>
+        <option value="sand">暖砂</option>
+        <option value="lavender">薰衣草</option>
+        <option value="midnight">午夜</option>
+      </select>
+      <button class="icon" id="toggle-config" title="仓库设置">⚙</button>
+      <button class="icon" id="reload" title="重新读取">↻</button>
+    </header>
+  </div>
+
+  <div class="card" id="config-card">
+    <h2>仓库设置</h2>
+    <div class="grid">
+      <label class="field">服务商
+        <select id="provider">
+          <option value="github">GitHub</option>
+          <option value="gitea">Gitea / Forgejo</option>
+          <option value="gitlab">GitLab</option>
+        </select>
+      </label>
+      <label class="field">服务器地址
+        <input id="baseUrl" placeholder="https://api.github.com" autocomplete="off" />
+      </label>
+      <label class="field">拥有者 / 命名空间
+        <input id="owner" placeholder="hatim" autocomplete="off" />
+      </label>
+      <label class="field">仓库
+        <input id="repo" placeholder="todo" autocomplete="off" />
+      </label>
+      <label class="field">分支
+        <input id="branch" placeholder="main" autocomplete="off" />
+      </label>
+      <label class="field">文件路径
+        <input id="path" placeholder="data/todos.json" autocomplete="off" />
+      </label>
+      <label class="field" style="grid-column: 1 / -1">访问令牌（仅保存在本机 localStorage）
+        <input id="token" type="password" placeholder="ghp_… / glpat-…" autocomplete="off" />
+      </label>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="primary" id="connect">连接并读取</button>
+      <button id="save-config">仅保存配置</button>
+      <button class="ghost danger" id="forget">清除本机配置</button>
+    </div>
+    <p class="hint">
+      令牌需要仓库内容读写权限（GitHub fine-grained: Contents → Read and write；GitLab: api 或 write_repository）。
+      页面完全在浏览器里运行，令牌只存在本机；仍建议使用只授权单个仓库、可随时撤销的令牌。
+      若以 file:// 直接打开，浏览器会因 CORS 拒绝请求，请通过 GitHub Pages 或任意静态服务器访问。
+    </p>
+    <div class="status" id="config-status"></div>
+  </div>
+
+  <div class="card">
+    <div class="row" id="filters" style="margin-bottom:14px"></div>
+    <ul class="tasks" id="tasks"></ul>
+    <div class="empty hidden" id="empty">这里还没有任务</div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card">
+    <div class="add-form">
+      <div class="inputs">
+        <label class="field">新任务
+          <input id="new-title" placeholder="要做什么？" autocomplete="off" />
+        </label>
+        <label class="field">清单
+          <select id="new-list"></select>
+        </label>
+        <label class="field">紧急程度
+          <select id="new-priority">
+            <option value="normal">普通</option>
+            <option value="low">低</option>
+            <option value="high">高</option>
+            <option value="urgent">紧急</option>
+          </select>
+        </label>
+      </div>
+      <button class="primary" id="add">添加</button>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label class="field grow" style="flex:1">截止时间
+        <input id="new-due" type="datetime-local" />
+      </label>
+      <label class="field grow" style="flex:1">提醒时间
+        <input id="new-remind" type="datetime-local" />
+      </label>
+      <label class="field" style="flex-direction:row;align-items:center;gap:8px;padding-top:16px">
+        <input id="new-clock" type="checkbox" style="width:auto" checked /> 时钟
+      </label>
+      <label class="field" style="flex-direction:row;align-items:center;gap:8px;padding-top:16px">
+        <input id="new-email" type="checkbox" style="width:auto" /> 邮件
+      </label>
+    </div>
+  </div>
+
+  <p class="hint" style="text-align:center">
+    与 Android 客户端使用同一份 <code>data/todos.json</code>；写入冲突时按「最后修改优先 + 逐条三方合并」处理。
+  </p>
+</div>
+
+<dialog id="edit-dialog">
+  <h2>编辑任务</h2>
+  <div class="grid">
+    <label class="field" style="grid-column:1/-1">标题
+      <input id="edit-title" />
+    </label>
+    <label class="field">清单
+      <select id="edit-list"></select>
+    </label>
+    <label class="field">紧急程度
+      <select id="edit-priority">
+        <option value="low">低</option>
+        <option value="normal">普通</option>
+        <option value="high">高</option>
+        <option value="urgent">紧急</option>
+      </select>
+    </label>
+    <label class="field">截止时间
+      <input id="edit-due" type="datetime-local" />
+    </label>
+    <label class="field">提醒时间
+      <input id="edit-remind" type="datetime-local" />
+    </label>
+    <label class="field" style="grid-column:1/-1">备注
+      <textarea id="edit-notes" rows="3"></textarea>
+    </label>
+    <label class="field" style="flex-direction:row;align-items:center;gap:8px">
+      <input id="edit-pinned" type="checkbox" style="width:auto" /> 置顶
+    </label>
+  </div>
+  <div class="row" style="margin-top:16px;justify-content:flex-end">
+    <button class="danger" id="edit-delete">删除</button>
+    <button id="edit-cancel">取消</button>
+    <button class="primary" id="edit-save">保存</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ * State
+ * ------------------------------------------------------------------ */
+
+const STORAGE_KEY = "todo.web.config.v1";
+const THEME_KEY = "todo.web.theme";
+const DEVICE_KEY = "todo.web.device";
+const SCHEMA_VERSION = 1;
+
+const state = {
+  config: null,
+  doc: null,          // current document (local edits applied)
+  base: null,         // last document read from / written to the server
+  revision: null,     // blob sha (GitHub/Gitea) or last_commit_id (GitLab)
+  filter: { mode: "all", listId: null },
+  busy: false,
+};
+
+const deviceId = (() => {
+  let id = localStorage.getItem(DEVICE_KEY);
+  if (!id) {
+    id = "web-" + Math.random().toString(16).slice(2, 10);
+    localStorage.setItem(DEVICE_KEY, id);
+  }
+  return id;
+})();
+
+const $ = (id) => document.getElementById(id);
+
+/* ------------------------------------------------------------------ *
+ * Base64 (UTF-8 safe, chunked so large files do not blow the stack)
+ * ------------------------------------------------------------------ */
+
+function toBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+function fromBase64(value) {
+  const binary = atob(value.replace(/\s/g, ""));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+const encSegment = (value) => encodeURIComponent(value);
+const encPath = (path) => path.split("/").filter(Boolean).map(encodeURIComponent).join("/");
+
+/* ------------------------------------------------------------------ *
+ * Provider adapters — same file, three different REST shapes
+ * ------------------------------------------------------------------ */
+
+function apiUrl(config) {
+  const base = config.baseUrl.replace(/\/+$/, "");
+  if (config.provider === "gitlab") {
+    const project = encodeURIComponent(`${config.owner}/${config.repo}`);
+    return `${base}/api/v4/projects/${project}/repository/files/${encSegment(config.path)}?ref=${encodeURIComponent(config.branch)}`;
+  }
+  const prefix = config.provider === "github" ? "/repos" : "/api/v1/repos";
+  return `${base}${prefix}/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encPath(config.path)}?ref=${encodeURIComponent(config.branch)}`;
+}
+
+function apiHeaders(config) {
+  if (config.provider === "gitlab") {
+    return { "PRIVATE-TOKEN": config.token, Accept: "application/json" };
+  }
+  return {
+    Authorization: config.provider === "github" ? `Bearer ${config.token}` : `token ${config.token}`,
+    Accept: config.provider === "github" ? "application/vnd.github+json" : "application/json",
+  };
+}
+
+async function readRemote(config) {
+  const response = await fetch(apiUrl(config), { headers: apiHeaders(config) });
+  if (response.status === 404) return null;
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`无权访问（${response.status}），请检查令牌权限`);
+  }
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`读取失败（${response.status}）${detail.slice(0, 160)}`);
+  }
+  const data = await response.json();
+  if (config.provider === "gitlab") {
+    return { content: fromBase64(data.content), revision: data.last_commit_id };
+  }
+  if (!data.content) throw new Error("文件过大或为空，无法通过 Contents API 读取");
+  return { content: fromBase64(data.content), revision: data.sha };
+}
+
+async function writeRemote(config, content, revision, message) {
+  const base = config.baseUrl.replace(/\/+$/, "");
+  let url;
+  let method = "PUT";
+  let body;
+
+  if (config.provider === "gitlab") {
+    const project = encodeURIComponent(`${config.owner}/${config.repo}`);
+    url = `${base}/api/v4/projects/${project}/repository/files/${encSegment(config.path)}`;
+    method = revision ? "PUT" : "POST";
+    body = {
+      branch: config.branch,
+      content: toBase64(content),
+      commit_message: message,
+    };
+    if (revision) body.last_commit_id = revision;
+  } else {
+    url = apiUrl(config).replace(/\?ref=.*$/, "");
+    body = {
+      message,
+      content: toBase64(content),
+      branch: config.branch,
+    };
+    if (revision) body.sha = revision;
+  }
+
+  const response = await fetch(url, {
+    method,
+    headers: { ...apiHeaders(config), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (response.ok) {
+    const data = await response.json().catch(() => ({}));
+    const newRevision =
+      config.provider === "gitlab"
+        ? data.last_commit_id || data.commit_id || revision
+        : (data.content && data.content.sha) || revision;
+    return { revision: newRevision };
+  }
+  if (response.status === 409 || response.status === 412 || response.status === 400 || response.status === 422) {
+    const error = new Error("conflict");
+    error.conflict = true;
+    throw error;
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`无权写入（${response.status}），请检查令牌权限`);
+  }
+  const detail = await response.text();
+  throw new Error(`写入失败（${response.status}）${detail.slice(0, 160)}`);
+}
+
+/* ------------------------------------------------------------------ *
+ * Merge — identical rules to the Android client, three-way per record
+ * ------------------------------------------------------------------ */
+
+const CONTENT_KEYS = {
+  lists: ["name", "color", "sortOrder", "createdAt", "deletedAt"],
+  items: ["listId", "title", "notes", "priority", "dueAt", "remindAt", "channels", "pinned", "done", "doneAt", "createdAt", "deletedAt"],
+};
+
+function sameContent(kind, a, b) {
+  return CONTENT_KEYS[kind].every((key) => (a[key] ?? null) === (b[key] ?? null));
+}
+
+function pickNewer(a, b) {
+  if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt ? a : b;
+  return (a.deviceId || "") >= (b.deviceId || "") ? a : b;
+}
+
+function mergeDocs(base, local, remote) {
+  const result = { schemaVersion: SCHEMA_VERSION, generatedAt: Date.now(), writer: deviceId, lists: [], items: [] };
+  for (const kind of ["lists", "items"]) {
+    const baseIndex = indexById(base ? base[kind] : []);
+    const localIndex = indexById(local[kind] || []);
+    const remoteIndex = indexById(remote ? remote[kind] : []);
+    const ids = new Set([...Object.keys(localIndex), ...Object.keys(remoteIndex)]);
+    for (const id of ids) {
+      const b = baseIndex[id];
+      const l = localIndex[id];
+      const r = remoteIndex[id];
+      let chosen;
+      if (l && !r) chosen = l;
+      else if (!l && r) chosen = r;
+      else if (!l && !r) continue;
+      else if (sameContent(kind, l, r)) chosen = pickNewer(l, r);
+      else {
+        const localChanged = !b || !sameContent(kind, l, b);
+        const remoteChanged = !b || !sameContent(kind, r, b);
+        if (localChanged && !remoteChanged) chosen = l;
+        else if (!localChanged && remoteChanged) chosen = r;
+        else chosen = pickNewer(l, r);
+      }
+      result[kind].push(chosen);
+    }
+    result[kind].sort((a, b2) => (a.id < b2.id ? -1 : 1));
+  }
+  return result;
+}
+
+function indexById(list) {
+  const map = {};
+  (list || []).forEach((record) => { map[record.id] = record; });
+  return map;
+}
+
+/* ------------------------------------------------------------------ *
+ * Loading / saving
+ * ------------------------------------------------------------------ */
+
+async function connect() {
+  const config = readConfigForm();
+  if (!validate(config)) return;
+  saveConfig(config);
+  state.config = config;
+  await load(true);
+}
+
+async function load(announce) {
+  if (!state.config || state.busy) return;
+  setBusy(true);
+  setStatus("读取中…");
+  try {
+    const remote = await readRemote(state.config);
+    if (!remote) {
+      state.doc = emptyDoc();
+      state.base = null;
+      state.revision = null;
+      setStatus("仓库里还没有文件，保存第一条任务时会自动创建。", "ok");
+    } else {
+      const parsed = JSON.parse(remote.content);
+      if (parsed.schemaVersion > SCHEMA_VERSION) {
+        throw new Error(`文件使用 schemaVersion ${parsed.schemaVersion}，本页面只支持 ${SCHEMA_VERSION}`);
+      }
+      state.doc = normalizeDoc(parsed);
+      state.base = normalizeDoc(parsed);
+      state.revision = remote.revision;
+      setStatus(announce ? `已读取 ${visibleItems().length} 条任务` : "", "ok");
+    }
+    render();
+  } catch (error) {
+    setStatus(error.message, "error");
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function persist(message) {
+  if (!state.config) {
+    setStatus("请先配置并连接仓库。", "error");
+    return false;
+  }
+  setBusy(true);
+  setStatus("保存中…");
+  try {
+    let attempts = 0;
+    while (attempts < 3) {
+      attempts += 1;
+      const payload = JSON.stringify(state.doc, null, 2) + "\n";
+      try {
+        const { revision } = await writeRemote(state.config, payload, state.revision, message);
+        state.revision = revision;
+        state.base = JSON.parse(JSON.stringify(state.doc));
+        setStatus("已保存到仓库", "ok");
+        return true;
+      } catch (error) {
+        if (!error.conflict) throw error;
+        const remote = await readRemote(state.config);
+        const remoteDoc = remote ? normalizeDoc(JSON.parse(remote.content)) : emptyDoc();
+        state.doc = mergeDocs(state.base, state.doc, remoteDoc);
+        state.revision = remote ? remote.revision : null;
+        render();
+        setStatus("检测到其他设备的修改，已合并后重试…");
+      }
+    }
+    throw new Error("多次尝试后仍无法写入，请稍后重试");
+  } catch (error) {
+    setStatus(error.message, "error");
+    return false;
+  } finally {
+    setBusy(false);
+  }
+}
+
+function emptyDoc() {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    generatedAt: Date.now(),
+    writer: deviceId,
+    lists: [newList("inbox", "收件箱", 0xff4c5bd4)],
+    items: [],
+  };
+}
+
+function normalizeDoc(raw) {
+  const doc = {
+    schemaVersion: raw.schemaVersion || SCHEMA_VERSION,
+    generatedAt: raw.generatedAt || 0,
+    writer: raw.writer || "",
+    lists: Array.isArray(raw.lists) ? raw.lists.map(normalizeList) : [],
+    items: Array.isArray(raw.items) ? raw.items.map(normalizeItem) : [],
+  };
+  if (doc.lists.length === 0) doc.lists.push(newList("inbox", "收件箱", 0xff4c5bd4));
+  return doc;
+}
+
+function normalizeList(raw) {
+  return {
+    id: raw.id,
+    name: raw.name || "",
+    color: (raw.color ?? 0xff4c5bd4) >>> 0,
+    sortOrder: raw.sortOrder ?? 0,
+    createdAt: raw.createdAt ?? raw.updatedAt ?? Date.now(),
+    updatedAt: raw.updatedAt ?? Date.now(),
+    deletedAt: raw.deletedAt ?? null,
+    deviceId: raw.deviceId || "",
+  };
+}
+
+function normalizeItem(raw) {
+  return {
+    id: raw.id,
+    listId: raw.listId || "inbox",
+    title: raw.title || "",
+    notes: raw.notes || "",
+    priority: raw.priority || "normal",
+    dueAt: raw.dueAt ?? null,
+    remindAt: raw.remindAt ?? null,
+    channels: raw.channels ?? 0,
+    pinned: !!raw.pinned,
+    done: !!raw.done,
+    doneAt: raw.doneAt ?? null,
+    createdAt: raw.createdAt ?? raw.updatedAt ?? Date.now(),
+    updatedAt: raw.updatedAt ?? Date.now(),
+    deletedAt: raw.deletedAt ?? null,
+    deviceId: raw.deviceId || "",
+  };
+}
+
+function newList(id, name, color) {
+  const now = Date.now();
+  return { id, name, color: color >>> 0, sortOrder: 0, createdAt: now, updatedAt: now, deletedAt: null, deviceId };
+}
+
+/* ------------------------------------------------------------------ *
+ * Mutations
+ * ------------------------------------------------------------------ */
+
+function touch(record) {
+  record.updatedAt = Date.now();
+  record.deviceId = deviceId;
+  return record;
+}
+
+function liveItems() {
+  return (state.doc ? state.doc.items : []).filter((item) => !item.deletedAt);
+}
+
+function liveLists() {
+  return (state.doc ? state.doc.lists : []).filter((list) => !list.deletedAt);
+}
+
+function visibleItems() {
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  return liveItems()
+    .filter((item) => {
+      switch (state.filter.mode) {
+        case "open": return !item.done;
+        case "done": return item.done;
+        case "today": return !item.done && item.dueAt !== null && item.dueAt <= endOfToday.getTime();
+        case "urgent": return !item.done && item.priority === "urgent";
+        default: return true;
+      }
+    })
+    .filter((item) => (state.filter.listId ? item.listId === state.filter.listId : true))
+    .sort((a, b) => {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      const aDue = a.dueAt ?? Number.MAX_SAFE_INTEGER;
+      const bDue = b.dueAt ?? Number.MAX_SAFE_INTEGER;
+      if (aDue !== bDue) return aDue - bDue;
+      return b.createdAt - a.createdAt;
+    });
+}
+
+async function addTask() {
+  const title = $("new-title").value.trim();
+  if (!title) return;
+  if (!state.doc) state.doc = emptyDoc();
+  const now = Date.now();
+  const item = {
+    id: (crypto.randomUUID ? crypto.randomUUID() : String(now) + Math.random().toString(16).slice(2)),
+    listId: $("new-list").value || "inbox",
+    title,
+    notes: "",
+    priority: $("new-priority").value,
+    dueAt: parseLocalInput($("new-due").value),
+    remindAt: parseLocalInput($("new-remind").value),
+    channels: ($("new-clock").checked ? 1 : 0) | ($("new-email").checked ? 2 : 0),
+    pinned: false,
+    done: false,
+    doneAt: null,
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    deviceId,
+  };
+  state.doc.items.push(item);
+  $("new-title").value = "";
+  $("new-due").value = "";
+  $("new-remind").value = "";
+  render();
+  await persist(`todo(web): add "${title}"`);
+}
+
+async function toggleDone(item) {
+  item.done = !item.done;
+  item.doneAt = item.done ? Date.now() : null;
+  touch(item);
+  render();
+  await persist(`todo(web): ${item.done ? "complete" : "reopen"} "${item.title}"`);
+}
+
+async function togglePin(item) {
+  item.pinned = !item.pinned;
+  touch(item);
+  render();
+  await persist(`todo(web): pin "${item.title}"`);
+}
+
+async function deleteItem(item) {
+  item.deletedAt = Date.now();
+  touch(item);
+  render();
+  await persist(`todo(web): delete "${item.title}"`);
+}
+
+/* ------------------------------------------------------------------ *
+ * Rendering
+ * ------------------------------------------------------------------ */
+
+function render() {
+  renderSummary();
+  renderFilters();
+  renderListOptions();
+  renderTasks();
+}
+
+function renderSummary() {
+  const items = liveItems();
+  const open = items.filter((item) => !item.done).length;
+  const done = items.length - open;
+  $("summary").textContent = state.config
+    ? `${state.config.owner}/${state.config.repo} · ${open} 待办 · ${done} 已完成`
+    : "未连接仓库";
+}
+
+function renderFilters() {
+  const holder = $("filters");
+  holder.innerHTML = "";
+  const modes = [
+    ["all", "全部"],
+    ["open", "未完成"],
+    ["today", "今天"],
+    ["urgent", "紧急"],
+    ["done", "已完成"],
+  ];
+  modes.forEach(([mode, label]) => {
+    const button = document.createElement("button");
+    button.className = "chip" + (state.filter.mode === mode ? " on" : "");
+    button.textContent = label;
+    button.onclick = () => { state.filter.mode = mode; render(); };
+    holder.appendChild(button);
+  });
+  liveLists().forEach((list) => {
+    const button = document.createElement("button");
+    button.className = "chip" + (state.filter.listId === list.id ? " on" : "");
+    button.innerHTML = `<span class="dot" style="background:${cssColor(list.color)}"></span>${escapeHtml(list.name)}`;
+    button.onclick = () => {
+      state.filter.listId = state.filter.listId === list.id ? null : list.id;
+      render();
+    };
+    holder.appendChild(button);
+  });
+}
+
+function renderListOptions() {
+  ["new-list", "edit-list"].forEach((id) => {
+    const select = $(id);
+    const current = select.value;
+    select.innerHTML = "";
+    liveLists().forEach((list) => {
+      const option = document.createElement("option");
+      option.value = list.id;
+      option.textContent = list.name;
+      select.appendChild(option);
+    });
+    if (current) select.value = current;
+  });
+}
+
+function renderTasks() {
+  const holder = $("tasks");
+  holder.innerHTML = "";
+  const items = visibleItems();
+  $("empty").classList.toggle("hidden", items.length > 0);
+  const listNames = indexById(liveLists());
+
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.className = "task" + (item.done ? " done" : "");
+
+    const check = document.createElement("button");
+    check.className = "check" + (item.done ? " on" : "");
+    check.textContent = "✓";
+    check.title = item.done ? "标记未完成" : "标记完成";
+    check.onclick = () => toggleDone(item);
+
+    const body = document.createElement("div");
+    body.className = "body";
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = (item.pinned ? "📌 " : "") + item.title;
+    title.onclick = () => openEditor(item);
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const list = listNames[item.listId];
+    const parts = [];
+    if (list) parts.push(`<span><span class="dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${cssColor(list.color)}"></span> ${escapeHtml(list.name)}</span>`);
+    parts.push(`<span class="${item.priority}">${priorityLabel(item.priority)}</span>`);
+    if (item.dueAt) parts.push(`<span>${formatDateTime(item.dueAt)}</span>`);
+    if (item.channels & 1) parts.push("<span>🔔</span>");
+    if (item.channels & 2) parts.push("<span>✉️</span>");
+    meta.innerHTML = parts.join("<span>·</span>");
+    body.appendChild(title);
+    body.appendChild(meta);
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const pin = document.createElement("button");
+    pin.className = "icon ghost";
+    pin.textContent = item.pinned ? "★" : "☆";
+    pin.title = "置顶";
+    pin.onclick = () => togglePin(item);
+    const edit = document.createElement("button");
+    edit.className = "icon ghost";
+    edit.textContent = "✎";
+    edit.title = "编辑";
+    edit.onclick = () => openEditor(item);
+    const remove = document.createElement("button");
+    remove.className = "icon ghost danger";
+    remove.textContent = "🗑";
+    remove.title = "删除";
+    remove.onclick = () => {
+      if (confirm(`删除「${item.title}」？`)) deleteItem(item);
+    };
+    actions.append(pin, edit, remove);
+
+    li.append(check, body, actions);
+    holder.appendChild(li);
+  });
+}
+
+/* ------------------------------------------------------------------ *
+ * Editor dialog
+ * ------------------------------------------------------------------ */
+
+let editing = null;
+
+function openEditor(item) {
+  editing = item;
+  $("edit-title").value = item.title;
+  $("edit-list").value = item.listId;
+  $("edit-priority").value = item.priority;
+  $("edit-due").value = toLocalInput(item.dueAt);
+  $("edit-remind").value = toLocalInput(item.remindAt);
+  $("edit-notes").value = item.notes || "";
+  $("edit-pinned").checked = !!item.pinned;
+  $("edit-dialog").showModal();
+}
+
+async function saveEditor() {
+  if (!editing) return;
+  const title = $("edit-title").value.trim();
+  if (!title) return;
+  editing.title = title;
+  editing.listId = $("edit-list").value || editing.listId;
+  editing.priority = $("edit-priority").value;
+  editing.dueAt = parseLocalInput($("edit-due").value);
+  editing.remindAt = parseLocalInput($("edit-remind").value);
+  editing.notes = $("edit-notes").value;
+  editing.pinned = $("edit-pinned").checked;
+  touch(editing);
+  $("edit-dialog").close();
+  render();
+  await persist(`todo(web): edit "${editing.title}"`);
+}
+
+/* ------------------------------------------------------------------ *
+ * Config form
+ * ------------------------------------------------------------------ */
+
+function readConfigForm() {
+  return {
+    provider: $("provider").value,
+    baseUrl: $("baseUrl").value.trim(),
+    owner: $("owner").value.trim(),
+    repo: $("repo").value.trim(),
+    branch: $("branch").value.trim() || "main",
+    path: $("path").value.trim() || "data/todos.json",
+    token: $("token").value.trim(),
+  };
+}
+
+function fillConfigForm(config) {
+  if (!config) {
+    config = { provider: "github", baseUrl: "https://api.github.com", owner: "", repo: "", branch: "main", path: "data/todos.json", token: "" };
+  }
+  $("provider").value = config.provider;
+  $("baseUrl").value = config.baseUrl;
+  $("owner").value = config.owner;
+  $("repo").value = config.repo;
+  $("branch").value = config.branch;
+  $("path").value = config.path;
+  $("token").value = config.token;
+}
+
+const LOCAL_ORIGIN = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
+function validate(config) {
+  // Plain HTTP is only tolerated for a loopback mock server during development.
+  if (!config.baseUrl.startsWith("https://") && !LOCAL_ORIGIN.test(config.baseUrl)) {
+    setConfigStatus("服务器地址必须是 https://（本机调试可用 http://127.0.0.1:端口）", "error");
+    return false;
+  }
+  if (!config.owner || !config.repo || !config.token) {
+    setConfigStatus("拥有者、仓库、令牌都必须填写", "error");
+    return false;
+  }
+  return true;
+}
+
+function saveConfig(config) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+}
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Helpers
+ * ------------------------------------------------------------------ */
+
+function parseLocalInput(value) {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? null : time;
+}
+
+function toLocalInput(millis) {
+  if (millis === null || millis === undefined) return "";
+  const date = new Date(millis);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function formatDateTime(millis) {
+  const date = new Date(millis);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function cssColor(argb) {
+  const value = (argb >>> 0).toString(16).padStart(8, "0");
+  return `#${value.slice(2)}`;
+}
+
+function priorityLabel(priority) {
+  return { low: "低", normal: "普通", high: "高", urgent: "紧急" }[priority] || "普通";
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[char]));
+}
+
+function setStatus(message, kind) {
+  const element = $("status");
+  element.textContent = message || "";
+  element.className = "status" + (kind ? " " + kind : "");
+}
+
+function setConfigStatus(message, kind) {
+  const element = $("config-status");
+  element.textContent = message || "";
+  element.className = "status" + (kind ? " " + kind : "");
+}
+
+function setBusy(busy) {
+  state.busy = busy;
+  ["connect", "reload", "add", "save-config"].forEach((id) => { $(id).disabled = busy; });
+}
+
+/* ------------------------------------------------------------------ *
+ * Wiring
+ * ------------------------------------------------------------------ */
+
+(function init() {
+  const storedTheme = localStorage.getItem(THEME_KEY) || "cloud";
+  document.body.dataset.theme = storedTheme;
+  $("theme").value = storedTheme;
+
+  const config = loadConfig();
+  state.config = config;
+  fillConfigForm(config);
+
+  $("theme").onchange = (event) => {
+    document.body.dataset.theme = event.target.value;
+    localStorage.setItem(THEME_KEY, event.target.value);
+  };
+  $("toggle-config").onclick = () => $("config-card").classList.toggle("hidden");
+  $("connect").onclick = connect;
+  $("reload").onclick = () => load(true);
+  $("save-config").onclick = () => {
+    const next = readConfigForm();
+    if (!validate(next)) return;
+    saveConfig(next);
+    state.config = next;
+    setConfigStatus("配置已保存到本机", "ok");
+    renderSummary();
+  };
+  $("forget").onclick = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    state.config = null;
+    state.doc = null;
+    state.base = null;
+    state.revision = null;
+    fillConfigForm(null);
+    setConfigStatus("已清除本机配置", "ok");
+    render();
+  };
+  $("provider").onchange = () => {
+    const defaults = { github: "https://api.github.com", gitea: "", gitlab: "https://gitlab.com" };
+    const current = $("baseUrl").value.trim();
+    if (!current || Object.values(defaults).includes(current)) {
+      $("baseUrl").value = defaults[$("provider").value] || "";
+    }
+  };
+  $("add").onclick = addTask;
+  $("new-title").onkeydown = (event) => { if (event.key === "Enter") addTask(); };
+  $("edit-save").onclick = saveEditor;
+  $("edit-cancel").onclick = () => $("edit-dialog").close();
+  $("edit-delete").onclick = () => {
+    if (!editing) return;
+    const item = editing;
+    $("edit-dialog").close();
+    if (confirm(`删除「${item.title}」？`)) deleteItem(item);
+  };
+
+  render();
+  if (config && config.owner && config.repo && config.token) {
+    load(false);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!--
+      Adaptive icons must live in mipmap-anydpi-v26: `anydpi` without a version
+      qualifier is rejected by AAPT2, so the -v26 folder is required even though
+      minSdk 30 makes the qualifier look redundant.
+    -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+</lint>

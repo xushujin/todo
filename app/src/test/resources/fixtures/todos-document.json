@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": 1759999999000,
+  "writer": "web",
+  "lists": [
+    {
+      "id": "inbox",
+      "name": "Inbox",
+      "color": 4283485140,
+      "sortOrder": 0,
+      "createdAt": 1759999999000,
+      "updatedAt": 1759999999000,
+      "deletedAt": null,
+      "deviceId": "web"
+    }
+  ],
+  "items": [
+    {
+      "id": "a1",
+      "listId": "inbox",
+      "title": "Buy milk",
+      "notes": "",
+      "priority": "high",
+      "dueAt": 1760000000000,
+      "remindAt": null,
+      "channels": 1,
+      "pinned": false,
+      "done": false,
+      "doneAt": null,
+      "createdAt": 1759999999000,
+      "updatedAt": 1759999999000,
+      "deletedAt": null,
+      "deviceId": "web"
+    },
+    {
+      "id": "a2",
+      "listId": "inbox",
+      "title": "给妈妈打电话",
+      "notes": "周末",
+      "priority": "urgent",
+      "dueAt": null,
+      "remindAt": 1760003600000,
+      "channels": 3,
+      "pinned": true,
+      "done": true,
+      "doneAt": 1760000100000,
+      "createdAt": 1759999999000,
+      "updatedAt": 1760000100000,
+      "deletedAt": null,
+      "deviceId": "web"
+    }
+  ]
+}

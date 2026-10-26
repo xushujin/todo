@@ -1,0 +1,26 @@
+# Keeps the "latest libraries" requirement honest without breaking the build:
+# patch/minor upgrades are proposed weekly, major upgrades need a human decision.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "org.jetbrains.kotlinx*"
+    ignore:
+      # AGP 9 / compileSdk 37 upgrades change the toolchain; do them deliberately.
+      - dependency-name: "com.android.tools.build:gradle"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

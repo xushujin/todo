@@ -1,0 +1,18 @@
+{
+  "name": "todos.json",
+  "path": "data/todos.json",
+  "sha": "3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
+  "size": 1129,
+  "url": "https://api.github.com/repos/hatim/todo/contents/data/todos.json?ref=main",
+  "html_url": "https://github.com/hatim/todo/blob/main/data/todos.json",
+  "git_url": "https://api.github.com/repos/hatim/todo/git/blobs/3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
+  "download_url": "https://raw.githubusercontent.com/hatim/todo/main/data/todos.json",
+  "type": "file",
+  "content": "ewogICJzY2hlbWFWZXJzaW9uIjogMSwKICAiZ2VuZXJhdGVkQXQiOiAxNzU5\nOTk5OTk5MDAwLAogICJ3cml0ZXIiOiAid2ViIiwKICAibGlzdHMiOiBbCiAg\nICB7CiAgICAgICJpZCI6ICJpbmJveCIsCiAgICAgICJuYW1lIjogIkluYm94\nIiwKICAgICAgImNvbG9yIjogNDI4MzQ4NTE0MCwKICAgICAgInNvcnRPcmRl\nciI6IDAsCiAgICAgICJjcmVhdGVkQXQiOiAxNzU5OTk5OTk5MDAwLAogICAg\nICAidXBkYXRlZEF0IjogMTc1OTk5OTk5OTAwMCwKICAgICAgImRlbGV0ZWRB\ndCI6IG51bGwsCiAgICAgICJkZXZpY2VJZCI6ICJ3ZWIiCiAgICB9CiAgXSwK\nICAiaXRlbXMiOiBbCiAgICB7CiAgICAgICJpZCI6ICJhMSIsCiAgICAgICJs\naXN0SWQiOiAiaW5ib3giLAogICAgICAidGl0bGUiOiAiQnV5IG1pbGsiLAog\nICAgICAibm90ZXMiOiAiIiwKICAgICAgInByaW9yaXR5IjogImhpZ2giLAog\nICAgICAiZHVlQXQiOiAxNzYwMDAwMDAwMDAwLAogICAgICAicmVtaW5kQXQi\nOiBudWxsLAogICAgICAiY2hhbm5lbHMiOiAxLAogICAgICAicGlubmVkIjog\nZmFsc2UsCiAgICAgICJkb25lIjogZmFsc2UsCiAgICAgICJkb25lQXQiOiBu\ndWxsLAogICAgICAiY3JlYXRlZEF0IjogMTc1OTk5OTk5OTAwMCwKICAgICAg\nInVwZGF0ZWRBdCI6IDE3NTk5OTk5OTkwMDAsCiAgICAgICJkZWxldGVkQXQi\nOiBudWxsLAogICAgICAiZGV2aWNlSWQiOiAid2ViIgogICAgfSwKICAgIHsK\nICAgICAgImlkIjogImEyIiwKICAgICAgImxpc3RJZCI6ICJpbmJveCIsCiAg\nICAgICJ0aXRsZSI6ICLnu5nlpojlpojmiZPnlLXor50iLAogICAgICAibm90\nZXMiOiAi5ZGo5pyrIiwKICAgICAgInByaW9yaXR5IjogInVyZ2VudCIsCiAg\nICAgICJkdWVBdCI6IG51bGwsCiAgICAgICJyZW1pbmRBdCI6IDE3NjAwMDM2\nMDAwMDAsCiAgICAgICJjaGFubmVscyI6IDMsCiAgICAgICJwaW5uZWQiOiB0\ncnVlLAogICAgICAiZG9uZSI6IHRydWUsCiAgICAgICJkb25lQXQiOiAxNzYw\nMDAwMTAwMDAwLAogICAgICAiY3JlYXRlZEF0IjogMTc1OTk5OTk5OTAwMCwK\nICAgICAgInVwZGF0ZWRBdCI6IDE3NjAwMDAxMDAwMDAsCiAgICAgICJkZWxl\ndGVkQXQiOiBudWxsLAogICAgICAiZGV2aWNlSWQiOiAid2ViIgogICAgfQog\nIF0KfQ==\n",
+  "encoding": "base64",
+  "_links": {
+    "self": "https://api.github.com/repos/hatim/todo/contents/data/todos.json?ref=main",
+    "git": "https://api.github.com/repos/hatim/todo/git/blobs/3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
+    "html": "https://github.com/hatim/todo/blob/main/data/todos.json"
+  }
+}

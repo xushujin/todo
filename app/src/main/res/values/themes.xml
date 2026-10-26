@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Only the window chrome lives here: every colour that the user can switch
+      (background, surface, accent, …) is owned by the Compose theme layer, so a
+      theme change is applied by exactly one code path (ui/theme/Palette.kt).
+    -->
+    <style name="Theme.Todo" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:colorAccent">#4C5BD4</item>
+    </style>
+</resources>

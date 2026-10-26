@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Todo</string>
+
+    <!-- Navigation / shell -->
+    <string name="nav_lists">Lists</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_sync">Git sync</string>
+    <string name="back">Back</string>
+
+    <!-- Home -->
+    <string name="home_title">Todo</string>
+    <string name="home_subtitle" tools:ignore="PluralsCandidate">%1$d open · %2$d done</string>
+    <string name="home_empty_title">Nothing here yet</string>
+    <string name="home_empty_body">Tap + to create your first task.</string>
+    <string name="home_filter_all">All</string>
+    <string name="home_filter_today">Today</string>
+    <string name="home_filter_urgent">Urgent</string>
+    <string name="home_sort">Sort</string>
+    <string name="home_sort_due">Due date</string>
+    <string name="home_sort_priority">Urgency</string>
+    <string name="home_sort_created">Created</string>
+    <string name="home_show_done">Show completed</string>
+    <string name="home_overdue">Overdue</string>
+    <string name="home_today">Today</string>
+    <string name="home_tomorrow">Tomorrow</string>
+
+    <!-- Editor -->
+    <string name="editor_new">New task</string>
+    <string name="editor_edit">Edit task</string>
+    <string name="editor_title">Title</string>
+    <string name="editor_title_hint">What needs to be done?</string>
+    <string name="editor_notes">Notes</string>
+    <string name="editor_notes_hint">Optional details</string>
+    <string name="editor_list">List</string>
+    <string name="editor_priority">Urgency</string>
+    <string name="editor_due">Due date</string>
+    <string name="editor_reminder">Reminder</string>
+    <string name="editor_reminder_time">Reminder time</string>
+    <string name="editor_channels">Reminder channels</string>
+    <string name="editor_channel_clock">Clock alarm</string>
+    <string name="editor_channel_email">Email</string>
+    <string name="editor_pin">Pin to top</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_clear">Clear</string>
+    <string name="editor_required">Title is required</string>
+    <string name="editor_reminder_needs_time">Pick a reminder time first</string>
+    <string name="editor_pick_date">Pick date</string>
+    <string name="editor_pick_time">Pick time</string>
+    <string name="editor_ok">OK</string>
+    <string name="editor_cancel">Cancel</string>
+
+    <!-- Priority -->
+    <string name="priority_low">Low</string>
+    <string name="priority_normal">Normal</string>
+    <string name="priority_high">High</string>
+    <string name="priority_urgent">Urgent</string>
+
+    <!-- Lists -->
+    <string name="lists_title">Lists</string>
+    <string name="lists_new">New list</string>
+    <string name="lists_name">List name</string>
+    <string name="lists_color">Color</string>
+    <string name="lists_delete">Delete list</string>
+    <string name="lists_delete_confirm">Delete “%1$s”? Its tasks are deleted too.</string>
+    <string name="lists_count" tools:ignore="PluralsCandidate">%1$d tasks</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_security">Security</string>
+    <string name="settings_biometric">Unlock with biometrics</string>
+    <string name="settings_biometric_desc">Require fingerprint or device credential when the app opens.</string>
+    <string name="settings_biometric_unavailable">No biometric or device credential enrolled on this device.</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notification_permission">Notification permission</string>
+    <string name="settings_notification_granted">Granted</string>
+    <string name="settings_notification_denied">Not granted — tap to allow</string>
+    <string name="settings_exact_alarm">Exact alarms</string>
+    <string name="settings_exact_alarm_granted">Allowed</string>
+    <string name="settings_exact_alarm_denied">Not allowed — reminders may be delayed. Tap to allow.</string>
+    <string name="settings_email">Email reminder</string>
+    <string name="settings_email_desc">Used only when a task’s reminder channel includes email.</string>
+    <string name="settings_email_host">SMTP host</string>
+    <string name="settings_email_port">Port</string>
+    <string name="settings_email_username">Username</string>
+    <string name="settings_email_password">Password</string>
+    <string name="settings_email_from">From</string>
+    <string name="settings_email_to">To</string>
+    <string name="settings_email_save">Save email settings</string>
+    <string name="settings_email_send_test">Send test email</string>
+    <string name="settings_email_incomplete">Fill in host, username, password and recipient first.</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_purge">Purge deleted records older than 30 days</string>
+    <string name="settings_about">About</string>
+    <string name="settings_saved">Saved</string>
+
+    <!-- Sync -->
+    <string name="sync_title">Git sync</string>
+    <string name="sync_provider">Provider</string>
+    <string name="sync_base_url">Server URL</string>
+    <string name="sync_base_url_hint">https://github.com</string>
+    <string name="sync_owner">Owner / namespace</string>
+    <string name="sync_repo">Repository</string>
+    <string name="sync_branch">Branch</string>
+    <string name="sync_path">File path</string>
+    <string name="sync_token">Access token</string>
+    <string name="sync_token_hint">Needs read/write access to repository contents</string>
+    <string name="sync_save">Save configuration</string>
+    <string name="sync_now">Sync now</string>
+    <string name="sync_test">Test connection</string>
+    <string name="sync_last">Last sync: %1$s</string>
+    <string name="sync_never">never</string>
+    <string name="sync_result_ok">Synced. Pulled %1$d, pushed %2$d, conflicts %3$d.</string>
+    <string name="sync_result_nochange">Already up to date.</string>
+    <string name="sync_running">Syncing…</string>
+    <string name="sync_error">Sync failed: %1$s</string>
+    <string name="sync_not_configured">Configure the repository first.</string>
+    <string name="sync_conflicts">Conflicts resolved by latest edit: %1$d</string>
+    <string name="sync_insecure_warning">Plain HTTP is not allowed for remote servers.</string>
+
+    <!-- Lock -->
+    <string name="lock_title">Todo is locked</string>
+    <string name="lock_body">Unlock with your fingerprint or device credential.</string>
+    <string name="lock_action">Unlock</string>
+
+    <!-- About -->
+    <string name="about_title">About</string>
+    <string name="about_app">Application</string>
+    <string name="about_version">Version</string>
+    <string name="about_package">Package</string>
+    <string name="about_stack">Tech stack</string>
+    <string name="about_stack_value">Kotlin · Jetpack Compose · hand-written SQLite storage · hand-written JSON + git REST sync · hand-written SMTP client</string>
+    <string name="about_support">Supported range</string>
+    <string name="about_support_value">Android 11 (API 30) through Android 16 (API 36). No third-party UI or DI libraries.</string>
+    <string name="about_permissions">Permissions</string>
+    <string name="about_permissions_value">Internet + network state (git sync, email reminders) · notifications · exact alarms · boot completed (reschedule reminders) · biometric (app lock) · vibrate/wake lock (alarm delivery)</string>
+    <string name="about_privacy">Privacy</string>
+    <string name="about_privacy_value">All task data stays in the local database. Nothing is uploaded unless you configure a git repository. Tokens and SMTP passwords are encrypted with an Android Keystore key.</string>
+    <string name="about_licenses">Libraries</string>
+    <string name="about_licenses_value">AndroidX Core, Activity Compose, Lifecycle, Compose UI / Foundation / Material 3, Kotlin coroutines. No UI kit, no DI framework, no JGit, no JavaMail.</string>
+
+    <string name="notification_channel_reminders">Task reminders</string>
+    <string name="notification_channel_reminders_desc">Clock-style reminders for tasks with a reminder time.</string>
+
+    <string name="theme_cloud">Cloud</string>
+    <string name="theme_mint">Mint</string>
+    <string name="theme_sand">Sand</string>
+    <string name="theme_lavender">Lavender</string>
+    <string name="theme_midnight">Midnight</string>
+
+    <string name="sync_test_ok">Connection OK</string>
+    <string name="settings_email_sent">Test email sent.</string>
+
+    <!-- Common -->
+    <string name="common_save">Save</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+</resources>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Todo</string>
+    <string name="nav_lists">清单</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_sync">Git 同步</string>
+    <string name="back">返回</string>
+
+    <string name="home_title">Todo</string>
+    <string name="home_subtitle">%1$d 项待办 · %2$d 项已完成</string>
+    <string name="home_empty_title">还没有任务</string>
+    <string name="home_empty_body">点右下角 + 新建第一条待办。</string>
+    <string name="home_filter_all">全部</string>
+    <string name="home_filter_today">今天</string>
+    <string name="home_filter_urgent">紧急</string>
+    <string name="home_sort">排序</string>
+    <string name="home_sort_due">截止时间</string>
+    <string name="home_sort_priority">紧急程度</string>
+    <string name="home_sort_created">创建时间</string>
+    <string name="home_show_done">显示已完成</string>
+    <string name="home_overdue">已逾期</string>
+    <string name="home_today">今天</string>
+    <string name="home_tomorrow">明天</string>
+
+    <string name="editor_new">新建任务</string>
+    <string name="editor_edit">编辑任务</string>
+    <string name="editor_title">标题</string>
+    <string name="editor_title_hint">要做什么？</string>
+    <string name="editor_notes">备注</string>
+    <string name="editor_notes_hint">补充说明（可选）</string>
+    <string name="editor_list">所属清单</string>
+    <string name="editor_priority">紧急程度</string>
+    <string name="editor_due">截止时间</string>
+    <string name="editor_reminder">提醒</string>
+    <string name="editor_reminder_time">提醒时间</string>
+    <string name="editor_channels">提醒方式</string>
+    <string name="editor_channel_clock">时钟闹钟</string>
+    <string name="editor_channel_email">邮件</string>
+    <string name="editor_pin">置顶</string>
+    <string name="editor_save">保存</string>
+    <string name="editor_delete">删除</string>
+    <string name="editor_clear">清除</string>
+    <string name="editor_required">标题不能为空</string>
+    <string name="editor_reminder_needs_time">请先选择提醒时间</string>
+    <string name="editor_pick_date">选择日期</string>
+    <string name="editor_pick_time">选择时间</string>
+    <string name="editor_ok">确定</string>
+    <string name="editor_cancel">取消</string>
+
+    <string name="priority_low">低</string>
+    <string name="priority_normal">普通</string>
+    <string name="priority_high">高</string>
+    <string name="priority_urgent">紧急</string>
+
+    <string name="lists_title">清单</string>
+    <string name="lists_new">新建清单</string>
+    <string name="lists_name">清单名称</string>
+    <string name="lists_color">颜色</string>
+    <string name="lists_delete">删除清单</string>
+    <string name="lists_delete_confirm">删除“%1$s”？其中的任务会一起删除。</string>
+    <string name="lists_count">%1$d 项任务</string>
+
+    <string name="settings_title">设置</string>
+    <string name="settings_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_security">安全</string>
+    <string name="settings_biometric">生物识别解锁</string>
+    <string name="settings_biometric_desc">打开应用时要求指纹或设备凭证验证。</string>
+    <string name="settings_biometric_unavailable">此设备未录入生物识别或设备凭证。</string>
+    <string name="settings_notifications">通知</string>
+    <string name="settings_notification_permission">通知权限</string>
+    <string name="settings_notification_granted">已授权</string>
+    <string name="settings_notification_denied">未授权——点击开启</string>
+    <string name="settings_exact_alarm">精确闹钟</string>
+    <string name="settings_exact_alarm_granted">已允许</string>
+    <string name="settings_exact_alarm_denied">未允许——提醒可能延迟，点击开启</string>
+    <string name="settings_email">邮件提醒</string>
+    <string name="settings_email_desc">仅当任务的提醒方式包含邮件时使用。</string>
+    <string name="settings_email_host">SMTP 服务器</string>
+    <string name="settings_email_port">端口</string>
+    <string name="settings_email_username">用户名</string>
+    <string name="settings_email_password">密码</string>
+    <string name="settings_email_from">发件人</string>
+    <string name="settings_email_to">收件人</string>
+    <string name="settings_email_save">保存邮件设置</string>
+    <string name="settings_email_send_test">发送测试邮件</string>
+    <string name="settings_email_incomplete">请先填写服务器、用户名、密码和收件人。</string>
+    <string name="settings_data">数据</string>
+    <string name="settings_purge">清理 30 天前的删除记录</string>
+    <string name="settings_about">关于</string>
+    <string name="settings_saved">已保存</string>
+
+    <string name="sync_title">Git 同步</string>
+    <string name="sync_provider">服务商</string>
+    <string name="sync_base_url">服务器地址</string>
+    <string name="sync_base_url_hint">https://github.com</string>
+    <string name="sync_owner">拥有者 / 命名空间</string>
+    <string name="sync_repo">仓库</string>
+    <string name="sync_branch">分支</string>
+    <string name="sync_path">文件路径</string>
+    <string name="sync_token">访问令牌</string>
+    <string name="sync_token_hint">需要对仓库内容有读写权限</string>
+    <string name="sync_save">保存配置</string>
+    <string name="sync_now">立即同步</string>
+    <string name="sync_test">测试连接</string>
+    <string name="sync_last">上次同步：%1$s</string>
+    <string name="sync_never">从未</string>
+    <string name="sync_result_ok">同步完成。拉取 %1$d 条，推送 %2$d 条，冲突 %3$d 条。</string>
+    <string name="sync_result_nochange">已是最新。</string>
+    <string name="sync_running">同步中…</string>
+    <string name="sync_error">同步失败：%1$s</string>
+    <string name="sync_not_configured">请先配置仓库。</string>
+    <string name="sync_conflicts">按最新修改合并的冲突：%1$d 条</string>
+    <string name="sync_insecure_warning">远程服务器不允许使用明文 HTTP。</string>
+
+    <string name="lock_title">Todo 已锁定</string>
+    <string name="lock_body">请用指纹或设备凭证解锁。</string>
+    <string name="lock_action">解锁</string>
+
+    <string name="about_title">关于</string>
+    <string name="about_app">应用名称</string>
+    <string name="about_version">版本号</string>
+    <string name="about_package">包名</string>
+    <string name="about_stack">技术栈</string>
+    <string name="about_stack_value">Kotlin · Jetpack Compose · 手写 SQLite 存储 · 手写 JSON 与 Git REST 同步 · 手写 SMTP 客户端</string>
+    <string name="about_support">支持范围</string>
+    <string name="about_support_value">Android 11（API 30）至 Android 16（API 36）。不引入第三方 UI 库与 DI 框架。</string>
+    <string name="about_permissions">权限说明</string>
+    <string name="about_permissions_value">网络与网络状态（Git 同步、邮件提醒）· 通知 · 精确闹钟 · 开机启动（重排提醒）· 生物识别（应用锁）· 振动与唤醒锁（闹钟投递）</string>
+    <string name="about_privacy">隐私</string>
+    <string name="about_privacy_value">所有任务数据只保存在本地数据库。只有配置 Git 仓库后才会联网同步。令牌与 SMTP 密码用 Android Keystore 密钥加密保存。</string>
+    <string name="about_licenses">依赖库</string>
+    <string name="about_licenses_value">AndroidX Core、Activity Compose、Lifecycle、Compose UI / Foundation / Material 3、Kotlin 协程。无 UI 组件库、无 DI 框架、无 JGit、无 JavaMail。</string>
+
+    <string name="theme_cloud">云白</string>
+    <string name="theme_mint">薄荷</string>
+    <string name="theme_sand">暖砂</string>
+    <string name="theme_lavender">薰衣草</string>
+    <string name="theme_midnight">午夜</string>
+
+    <string name="notification_channel_reminders">任务提醒</string>
+    <string name="notification_channel_reminders_desc">为设置了提醒时间的任务发送时钟式通知。</string>
+
+    <string name="sync_test_ok">连接正常</string>
+    <string name="settings_email_sent">测试邮件已发送。</string>
+
+    <string name="common_save">保存</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_delete">删除</string>
+</resources>
