@@ -72,6 +72,9 @@ val releaseSigning = resolveReleaseSigning()
 val versionNameOverride: String? = providers.gradleProperty("versionName").orNull
 val versionCodeOverride: Int? = providers.gradleProperty("versionCode").orNull?.toIntOrNull()
 
+// Single source of truth for the shipped version name; also used to name the APK.
+val defaultVersionName: String = versionNameOverride ?: "1.0.0"
+
 android {
     namespace = "app.todo"
     compileSdk = 36
@@ -81,7 +84,7 @@ android {
         minSdk = 30
         targetSdk = 36
         versionCode = versionCodeOverride ?: 1
-        versionName = versionNameOverride ?: "1.0.0"
+        versionName = defaultVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -109,15 +112,6 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release")
-        }
-    }
-
-    // Rename the released APK to Todo-<version>-release.apk instead of app-release.apk.
-    applicationVariants.configureEach { variant ->
-        if (variant.name == "release") {
-            outputs.configureEach {
-                outputFileName = "Todo-${variant.versionName ?: "dev"}-release.apk"
-            }
         }
     }
 
@@ -153,6 +147,33 @@ android {
             "DebugProbesKt.bin",
             "kotlin-tooling-metadata.json",
         )
+    }
+}
+
+/**
+ * Renames the assembled release artifact to `Todo-<version>-release.apk`.
+ *
+ * AGP 8.13 exposes no API to set the output file name any more: the new
+ * `androidComponents` API has no `VariantOutput.outputFileName`, and the legacy
+ * `com.android.build.VariantOutput` only offers `getOutputFile()`. So we build
+ * the APK and rename it ourselves. CI calls this task instead of `assembleRelease`.
+ */
+val renameReleaseApk = tasks.register("renameReleaseApk") {
+    group = "build"
+    description = "Rename the release APK to Todo-<version>-release.apk"
+    dependsOn("assembleRelease")
+    doLast {
+        val dir = layout.buildDirectory.dir("outputs/apk/release").get().asFile
+        val source = File(dir, "app-release.apk")
+        val target = File(dir, "Todo-$defaultVersionName-release.apk")
+        if (!source.exists()) {
+            logger.lifecycle("Release APK already renamed: ${target.name}")
+            return@doLast
+        }
+        if (!source.renameTo(target)) {
+            throw GradleException("Failed to rename $source to $target")
+        }
+        logger.lifecycle("Release APK renamed to ${target.name}")
     }
 }
 

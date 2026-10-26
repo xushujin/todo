@@ -84,14 +84,17 @@ jobs:
           IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
           VERSION_CODE=$(( ${MAJOR:-0} * 10000 + ${MINOR:-0} * 100 + ${PATCH:-0} ))
           echo "Version ${VERSION} -> versionCode ${VERSION_CODE}"
-          ./gradlew assembleRelease \
+          ./gradlew renameReleaseApk \
             -PversionName="$VERSION" \
             -PversionCode="$VERSION_CODE" \
             --console=plain
 
       - name: Verify APK is signed and aligned
         run: |
-          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)
+          APK=$(find app/build/outputs/apk/release -name 'Todo-*.apk' | head -n 1)
+          if [ -z "$APK" ]; then
+            APK=$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)
+          fi
           echo "APK=$APK" >> "$GITHUB_ENV"
           BUILD_TOOLS=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -n 1)
           "$BUILD_TOOLS/apksigner" verify --print-certs "$APK"
