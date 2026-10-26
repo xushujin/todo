@@ -1,28 +1,14 @@
-# Keeps the "latest libraries" requirement honest without breaking the build:
-# patch/minor upgrades are proposed weekly, major upgrades need a human decision.
+# Dependabot is deliberately disabled for this repository.
+#
+# `updates: []` means no ecosystem is monitored, so Dependabot never opens
+# version-update PRs and never shows up in the Actions tab. Previously the
+# gradle ecosystem re-checked on every push that touched build.gradle.kts and
+# spawned "gradle in / for androidx... - Update" runs on main, which was pure
+# noise for a single-app repository. The github-actions ecosystem was removed
+# earlier for the same reason (an auto-bumped action version can silently
+# break the release pipeline).
+#
+# Library upgrades are done deliberately by hand and verified with a real
+# local/CI build.
 version: 2
-updates:
-  - package-ecosystem: gradle
-    directory: "/"
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
-    groups:
-      androidx:
-        patterns:
-          - "androidx.*"
-      kotlin:
-        patterns:
-          - "org.jetbrains.kotlin*"
-          - "org.jetbrains.kotlinx*"
-    ignore:
-      # AGP 9 / compileSdk 37 upgrades change the toolchain; do them deliberately.
-      - dependency-name: "com.android.tools.build:gradle"
-        update-types: ["version-update:semver-major"]
-
-# The github-actions ecosystem is deliberately NOT enabled.
-# Dependabot re-checks it whenever a workflow file changes, so every edit to
-# release.yml spawned a burst of "Update" runs and PRs. Worse, an auto-bumped
-# action version can silently break the release pipeline (setup-android@v3
-# already does, see its removed 'tools' package). Action versions are upgraded
-# by hand, together with a real CI run.
+updates: []
