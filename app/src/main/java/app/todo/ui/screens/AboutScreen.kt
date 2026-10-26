@@ -20,7 +20,6 @@ import app.todo.ui.theme.LocalTodoPalette
 
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
-    val palette = LocalTodoPalette.current
     Column(Modifier.fillMaxSize()) {
         ScreenHeader(title = stringResource(R.string.about_title), onBack = onBack)
         Column(
@@ -54,12 +53,6 @@ fun AboutScreen(onBack: () -> Unit) {
             SectionCard(title = stringResource(R.string.about_licenses)) {
                 InfoLine(null, stringResource(R.string.about_licenses_value))
             }
-            Text(
-                text = "GPL-3.0-only",
-                style = MaterialTheme.typography.labelSmall,
-                color = palette.textSecondary,
-                modifier = Modifier.padding(start = 4.dp),
-            )
         }
     }
 }
