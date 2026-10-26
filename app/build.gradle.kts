@@ -80,8 +80,8 @@ android {
         applicationId = "app.todo"
         minSdk = 30
         targetSdk = 36
-        versionCode = versionCodeOverride ?: 9
-        versionName = versionNameOverride ?: "1.1.0"
+        versionCode = versionCodeOverride ?: 1
+        versionName = versionNameOverride ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

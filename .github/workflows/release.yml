@@ -71,12 +71,17 @@ jobs:
           TODO_KEY_ALIAS: ${{ secrets.TODO_KEY_ALIAS }}
           TODO_KEY_PASSWORD: ${{ secrets.TODO_KEY_PASSWORD }}
           VERSION_NAME: ${{ github.ref_name }}
-          RUN_NUMBER: ${{ github.run_number }}
         run: |
           VERSION="${VERSION_NAME#v}"
+          # Deterministic, monotonic versionCode from semver: 1.2.3 -> 10203.
+          # Keeps published codes strictly above prior local dev builds and avoids
+          # coupling to github.run_number (which restarts low on a fresh repo).
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          VERSION_CODE=$(( ${MAJOR:-0} * 10000 + ${MINOR:-0} * 100 + ${PATCH:-0} ))
+          echo "Version ${VERSION} -> versionCode ${VERSION_CODE}"
           ./gradlew assembleRelease \
             -PversionName="$VERSION" \
-            -PversionCode="$RUN_NUMBER" \
+            -PversionCode="$VERSION_CODE" \
             --console=plain
 
       - name: Verify APK is signed and aligned
