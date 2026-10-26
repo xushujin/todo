@@ -32,6 +32,7 @@ import app.todo.domain.model.Priority
 import app.todo.domain.model.ReminderChannels
 import app.todo.domain.repo.TodoDraft
 import app.todo.ui.TodoViewModel
+import app.todo.ui.components.ChipFlow
 import app.todo.ui.components.ConfirmDialog
 import app.todo.ui.components.DropdownField
 import app.todo.ui.components.NeumorphicButton
@@ -150,7 +151,7 @@ fun EditorScreen(
             )
 
             SectionCard(title = stringResource(R.string.editor_priority)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipFlow {
                     Priority.entries.forEach { option ->
                         NeumorphicChip(
                             label = priorityLabel(option),

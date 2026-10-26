@@ -122,6 +122,7 @@ git tag v1.0.0 && git push origin v1.0.0
 | 设备无生物识别时开启应用锁会把用户锁死 | 仅在 `availability() == AVAILABLE` 时锁定，设置页开关同步禁用 |
 | `mipmap-anydpi` 不被 AAPT2 接受 | 保留 `mipmap-anydpi-v26`，用 `app/lint.xml` 忽略 `ObsoleteSdkInt` |
 | Lint 43 条告警 | 全部处理：删除未用字符串、KTX 替换、API 常量内联、参数顺序、locale 不静态缓存等，最终 0 issue |
+| 同步页服务商列表最后一个 chip 被挤压 | 4 个服务商用不换行的 `Row` 在窄屏放不下；改为 `ChipFlow`（FlowRow），顺带把优先级、排序、SMTP 加密、保存/测试按钮行一并改成可换行 |
 | Gitee 的 0 字节文件返回 200 空响应体/`[]`，报"Unexpected response" | 空响应视为空文档，改用父目录列表取 `sha` 后再写；新增 3 个单测（空 body、空数组、端到端 PUT 带 sha） |
 | 仓库字段填克隆地址导致 404 | `SyncConfig.normalized()` 解析 URL / `owner/repo` / 去掉 `.git`，校验拒绝把 URL 当仓库名 |
 | 0 字节的 `todos.json` 被报"文件过大" | `size == 0` 视为空文档；`size` 缺失且 `encoding:"none"` 才按过大处理 |

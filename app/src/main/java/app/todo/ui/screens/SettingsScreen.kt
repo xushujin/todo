@@ -40,6 +40,7 @@ import app.todo.data.mail.SmtpConfig
 import app.todo.data.mail.SmtpSecurity
 import app.todo.domain.model.TodoSort
 import app.todo.ui.TodoViewModel
+import app.todo.ui.components.ChipFlow
 import app.todo.ui.components.DropdownField
 import app.todo.ui.components.LabeledValueRow
 import app.todo.ui.components.NeumorphicButton
@@ -137,7 +138,7 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = palette.textSecondary,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipFlow {
                     TodoSort.entries.forEach { option ->
                         NeumorphicChip(
                             label = stringResource(
@@ -288,7 +289,7 @@ private fun EmailSettingsSection(
             label = stringResource(R.string.settings_email_port),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ChipFlow {
             SmtpSecurity.entries.forEach { option ->
                 NeumorphicChip(
                     label = option.name,

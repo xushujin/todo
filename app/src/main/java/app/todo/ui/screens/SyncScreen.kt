@@ -3,7 +3,6 @@ package app.todo.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,6 +29,7 @@ import app.todo.ui.ConnectionOutcome
 import app.todo.ui.SyncOutcome
 import app.todo.ui.TodoViewModel
 import app.todo.ui.components.LabeledValueRow
+import app.todo.ui.components.ChipFlow
 import app.todo.ui.components.NeumorphicButton
 import app.todo.ui.components.NeumorphicChip
 import app.todo.ui.components.NeumorphicTextField
@@ -191,7 +191,7 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             SectionCard(title = stringResource(R.string.sync_provider)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ChipFlow {
                     GitProviderKind.entries.forEach { option ->
                         NeumorphicChip(
                             label = option.label,
@@ -236,7 +236,7 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
                 token = token,
             ).normalized()
 
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            ChipFlow(horizontalSpacing = 10.dp) {
                 NeumorphicButton(
                     onClick = {
                         val problem = config.validate()
