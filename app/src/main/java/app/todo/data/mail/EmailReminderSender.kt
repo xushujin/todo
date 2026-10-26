@@ -11,7 +11,7 @@ class EmailReminderSender(private val client: SmtpClient) {
 
     suspend fun send(config: SmtpConfig, item: TodoItem, listName: String) {
         client.send(
-            config = config,
+            rawConfig = config,
             subject = "[Todo] ${item.title}",
             body = composeBody(item, listName),
         )
@@ -19,7 +19,7 @@ class EmailReminderSender(private val client: SmtpClient) {
 
     suspend fun sendTest(config: SmtpConfig) {
         client.send(
-            config = config,
+            rawConfig = config,
             subject = "[Todo] test email",
             body = "This is a test message from Todo.\n\n" +
                 "If you can read this, the SMTP settings work.\n",

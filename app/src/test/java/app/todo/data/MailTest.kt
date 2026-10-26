@@ -4,6 +4,7 @@ import app.todo.core.codec.Base64Codec
 import app.todo.data.mail.MimeMessageBuilder
 import app.todo.data.mail.SmtpClient
 import app.todo.data.mail.SmtpConfig
+import app.todo.data.mail.SmtpAuthException
 import app.todo.data.mail.SmtpException
 import app.todo.data.mail.SmtpSecurity
 import app.todo.data.mail.SmtpSocketFactory
@@ -20,6 +21,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -220,13 +223,54 @@ class SmtpClientTest {
     }
 
     @Test
-    fun surfacesAuthenticationFailures() {
+    fun surfacesAuthenticationFailuresAsAuthErrors() {
         FakeSmtpServer(rejectAuth = true).use { server ->
-            val error = assertThrows(SmtpException::class.java) {
+            val error = assertThrows(SmtpAuthException::class.java) {
                 runBlocking { clientFor(server).send(config(server), "s", "b") }
             }
-            assertTrue(error.message.orEmpty().contains("AUTH"))
+            // The message must tell the user what to fix, not just echo the reply code.
+            assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("app password"))
+            assertTrue(error.message.orEmpty(), error.message.orEmpty().contains("535"))
         }
+    }
+
+    @Test
+    fun trimsPastedCredentialsAndDefaultsTheSender() {
+        val messy = SmtpConfig(
+            host = " smtp.163.com ",
+            port = 465,
+            security = SmtpSecurity.TLS,
+            username = " me@163.com ",
+            password = " abcd1234 \n",
+            from = "  ",
+            to = " you@163.com ",
+        )
+
+        val fixed = messy.normalized()
+
+        assertEquals("smtp.163.com", fixed.host)
+        assertEquals("me@163.com", fixed.username)
+        assertEquals("abcd1234", fixed.password)
+        assertEquals("me@163.com", fixed.from)
+        assertEquals("you@163.com", fixed.to)
+        assertNull(fixed.validate())
+    }
+
+    @Test
+    fun rejectsAUsernameThatIsNotAFullAddress() {
+        val config = SmtpConfig(
+            host = "smtp.163.com",
+            port = 465,
+            username = "xushujin",
+            password = "abcd1234",
+            from = "xushujin@163.com",
+            to = "xushujin@163.com",
+        )
+
+        val problem = config.validate()
+
+        assertNotNull(problem)
+        assertTrue(problem.orEmpty(), problem.orEmpty().contains("full email address"))
     }
 
     @Test

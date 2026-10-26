@@ -9,6 +9,9 @@ import app.todo.AppGraph
 import app.todo.core.net.HttpException
 import app.todo.data.git.GitErrorKind
 import app.todo.data.git.GitException
+import app.todo.data.mail.SmtpAuthException
+import app.todo.data.mail.SmtpConfig
+import app.todo.data.mail.SmtpException
 import app.todo.data.prefs.SettingsStore
 import app.todo.domain.model.HomeFilter
 import app.todo.domain.model.HomeMode
@@ -30,6 +33,13 @@ sealed interface SyncOutcome {
     data object Running : SyncOutcome
     data class Success(val pulled: Int, val pushed: Int, val conflicts: Int) : SyncOutcome
     data class Failure(val kind: GitErrorKind, val detail: String) : SyncOutcome
+}
+
+enum class MailErrorKind { AUTH, CONFIG, NETWORK, UNKNOWN }
+
+sealed interface MailTestResult {
+    data object Sent : MailTestResult
+    data class Failed(val kind: MailErrorKind, val detail: String) : MailTestResult
 }
 
 sealed interface ConnectionOutcome {
@@ -147,7 +157,7 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
         }
     }
 
-    fun saveEmailSettings(config: app.todo.data.mail.SmtpConfig) = settings.saveEmailConfig(config)
+    fun saveEmailSettings(config: SmtpConfig) = settings.saveEmailConfig(config.normalized())
 
     fun saveSyncSettings(config: app.todo.data.git.SyncConfig) =
         settings.saveSyncConfig(config.normalized())
@@ -156,15 +166,27 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
         _syncOutcome.value = SyncOutcome.Idle
     }
 
-    fun sendTestEmail(onResult: (String?) -> Unit) {
-        val config = settings.emailConfig.value
+    fun sendTestEmail(onResult: (MailTestResult) -> Unit) {
+        val config = settings.emailConfig.value?.normalized()
         if (config == null || !config.isConfigured) {
-            onResult("incomplete")
+            onResult(MailTestResult.Failed(MailErrorKind.CONFIG, config?.validate().orEmpty()))
             return
         }
         viewModelScope.launch {
-            onResult(runCatching { graph.emailSender.sendTest(config) }.exceptionOrNull()?.message)
+            val result = runCatching { graph.emailSender.sendTest(config) }
+            onResult(
+                result.fold(
+                    onSuccess = { MailTestResult.Sent },
+                    onFailure = { MailTestResult.Failed(mailKindOf(it), it.message ?: "unknown error") },
+                ),
+            )
         }
+    }
+
+    private fun mailKindOf(error: Throwable): MailErrorKind = when {
+        error is SmtpAuthException -> MailErrorKind.AUTH
+        error is SmtpException -> MailErrorKind.CONFIG
+        else -> MailErrorKind.NETWORK
     }
 
     fun testSyncConnection(onResult: (ConnectionOutcome) -> Unit) {

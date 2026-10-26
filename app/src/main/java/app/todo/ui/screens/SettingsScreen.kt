@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -39,6 +40,8 @@ import app.todo.R
 import app.todo.data.mail.SmtpConfig
 import app.todo.data.mail.SmtpSecurity
 import app.todo.domain.model.TodoSort
+import app.todo.ui.MailErrorKind
+import app.todo.ui.MailTestResult
 import app.todo.ui.TodoViewModel
 import app.todo.ui.components.ChipFlow
 import app.todo.ui.components.DropdownField
@@ -99,6 +102,7 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -245,6 +249,16 @@ fun SettingsScreen(
 private val lockTimeoutOptions = listOf(0, 30, 60, 300, 900)
 
 @Composable
+private fun mailErrorTitle(kind: MailErrorKind): String = stringResource(
+    when (kind) {
+        MailErrorKind.AUTH -> R.string.mail_error_auth
+        MailErrorKind.CONFIG -> R.string.mail_error_config
+        MailErrorKind.NETWORK -> R.string.mail_error_network
+        MailErrorKind.UNKNOWN -> R.string.mail_error_unknown
+    },
+)
+
+@Composable
 private fun lockTimeoutLabel(seconds: Int): String = stringResource(
     when (seconds) {
         0 -> R.string.lock_timeout_immediate
@@ -259,7 +273,7 @@ private fun lockTimeoutLabel(seconds: Int): String = stringResource(
 private fun EmailSettingsSection(
     initial: SmtpConfig?,
     onSave: (SmtpConfig) -> Unit,
-    onSendTest: ((String?) -> Unit) -> Unit,
+    onSendTest: ((MailTestResult) -> Unit) -> Unit,
 ) {
     val palette = LocalTodoPalette.current
     var host by remember(initial) { mutableStateOf(initial?.host.orEmpty()) }
@@ -269,8 +283,7 @@ private fun EmailSettingsSection(
     var password by remember(initial) { mutableStateOf(initial?.password.orEmpty()) }
     var from by remember(initial) { mutableStateOf(initial?.from.orEmpty()) }
     var to by remember(initial) { mutableStateOf(initial?.to.orEmpty()) }
-    var status by remember { mutableStateOf<String?>(null) }
-    var statusOk by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<MailTestResult?>(null) }
     var testing by remember { mutableStateOf(false) }
 
     val incomplete = stringResource(R.string.settings_email_incomplete)
@@ -281,6 +294,11 @@ private fun EmailSettingsSection(
             text = stringResource(R.string.settings_email_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = palette.textSecondary,
+        )
+        Text(
+            text = stringResource(R.string.settings_email_hint),
+            style = MaterialTheme.typography.labelSmall,
+            color = palette.warning,
         )
         NeumorphicTextField(host, { host = it }, stringResource(R.string.settings_email_host))
         NeumorphicTextField(
@@ -321,8 +339,7 @@ private fun EmailSettingsSection(
         NeumorphicButton(
             onClick = {
                 onSave(config)
-                status = null
-                statusOk = false
+                result = null
             },
             accent = true,
         ) {
@@ -335,17 +352,15 @@ private fun EmailSettingsSection(
         NeumorphicButton(
             onClick = {
                 if (!config.isConfigured) {
-                    status = incomplete
+                    result = MailTestResult.Failed(MailErrorKind.CONFIG, incomplete)
                     return@NeumorphicButton
                 }
                 onSave(config)
                 testing = true
-                status = null
-                statusOk = false
-                onSendTest { error ->
+                result = null
+                onSendTest { outcome ->
                     testing = false
-                    statusOk = error == null
-                    status = error ?: sent
+                    result = outcome
                 }
             },
             enabled = !testing,
@@ -357,12 +372,27 @@ private fun EmailSettingsSection(
                 color = palette.textPrimary,
             )
         }
-        if (status != null) {
-            Text(
-                text = status.orEmpty(),
+        when (val outcome = result) {
+            null -> Unit
+            MailTestResult.Sent -> Text(
+                text = sent,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (statusOk) palette.success else palette.danger,
+                color = palette.success,
             )
+            is MailTestResult.Failed -> {
+                Text(
+                    text = mailErrorTitle(outcome.kind),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = palette.danger,
+                )
+                if (outcome.detail.isNotBlank()) {
+                    Text(
+                        text = outcome.detail.take(240),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = palette.textSecondary,
+                    )
+                }
+            }
         }
     }
 }

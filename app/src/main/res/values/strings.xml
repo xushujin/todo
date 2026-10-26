@@ -41,6 +41,8 @@
     <string name="editor_channel_clock">Clock alarm</string>
     <string name="editor_channel_email">Email</string>
     <string name="editor_pin">Pin to top</string>
+    <string name="editor_saved">Saved</string>
+    <string name="editor_saving">Saving…</string>
     <string name="editor_save">Save</string>
     <string name="editor_delete">Delete</string>
     <string name="editor_clear">Clear</string>
@@ -91,6 +93,11 @@
     <string name="settings_exact_alarm_denied">Not allowed — reminders may be delayed. Tap to allow.</string>
     <string name="settings_email">Email reminder</string>
     <string name="settings_email_desc">Used only when a task’s reminder channel includes email.</string>
+    <string name="settings_email_hint">163 / 126 / QQ: username is the full address (you@163.com), password is the app password (客户端授权码) generated in the mailbox settings, not the login password. Use port 465 with TLS, and enable SMTP in the mailbox settings first.</string>
+    <string name="mail_error_auth">Authentication failed: use the mailbox app password and the full email address as the username.</string>
+    <string name="mail_error_config">Mail settings are incomplete or were rejected by the server.</string>
+    <string name="mail_error_network">Network error: cannot reach the SMTP server.</string>
+    <string name="mail_error_unknown">Sending failed.</string>
     <string name="settings_email_host">SMTP host</string>
     <string name="settings_email_port">Port</string>
     <string name="settings_email_username">Username</string>

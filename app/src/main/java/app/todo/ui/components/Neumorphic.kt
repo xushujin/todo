@@ -114,6 +114,9 @@ fun NeumorphicButton(
             else -> palette.surface
         },
         contentPadding = contentPadding,
+        // Without this the content box is top-start aligned, so a full-width button
+        // shows its label on the left instead of centred.
+        contentAlignment = Alignment.Center,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

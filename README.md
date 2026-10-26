@@ -4,7 +4,7 @@
 时钟闹钟 + 邮件双通道提醒，生物识别应用锁，以及通过**自建 Git 仓库**完成的双向同步。
 仓库里还带一个纯静态 Web 页面，读取同一个 `data/todos.json` 做展示与操作。
 
-> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.6` · 支持 Android 11（API 30）– Android 16（API 36）
+> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.7` · 支持 Android 11（API 30）– Android 16（API 36）
 
 ---
 
@@ -281,7 +281,7 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 ## 11. 测试与验证
 
 ```bash
-./gradlew testDebugUnitTest        # 13 个测试类、107 个用例
+./gradlew testDebugUnitTest        # 13 个测试类、109 个用例
 python3 tools/verify_schema.py     # 真实 SQLite 执行迁移
 node tools/web_smoke_test.mjs      # Web 页面逻辑（需先起 mock server）
 ./gradlew lintDebug                # Android Lint，当前 0 issue

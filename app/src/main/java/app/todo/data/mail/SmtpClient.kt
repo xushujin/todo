@@ -24,19 +24,42 @@ data class SmtpConfig(
     val from: String = "",
     val to: String = "",
 ) {
+    /**
+     * Trims what people paste from a password manager and falls back to the username
+     * as sender — providers such as 163 reject `MAIL FROM` that differs from the
+     * authenticated mailbox.
+     */
+    fun normalized(): SmtpConfig {
+        val user = username.trim()
+        return copy(
+            host = host.trim(),
+            username = user,
+            password = password.trim(),
+            from = from.trim().ifBlank { user },
+            to = to.trim(),
+        )
+    }
+
     fun validate(): String? {
         if (host.isBlank()) return "SMTP host is required"
         if (port !in 1..65535) return "SMTP port is invalid"
         if (from.isBlank()) return "Sender address is required"
         if (to.isBlank()) return "Recipient address is required"
         if (username.isBlank() != password.isBlank()) return "Username and password must be set together"
+        // 163/126/QQ require the full mailbox address, not the bare account name.
+        if (username.isNotBlank() && !username.contains('@')) {
+            return "Username must be the full email address (e.g. you@163.com)"
+        }
         return null
     }
 
     val isConfigured: Boolean get() = validate() == null
 }
 
-class SmtpException(message: String) : Exception(message)
+open class SmtpException(message: String) : Exception(message)
+
+/** The server rejected the credentials (535/534) — almost always a wrong app password. */
+class SmtpAuthException(message: String) : SmtpException(message)
 
 /** Seam that lets the SMTP conversation be tested against a local socket. */
 interface SmtpSocketFactory {
@@ -68,8 +91,14 @@ class SmtpClient(
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
-    suspend fun send(config: SmtpConfig, subject: String, body: String, date: java.util.Date = java.util.Date()): Unit =
+    suspend fun send(
+        rawConfig: SmtpConfig,
+        subject: String,
+        body: String,
+        date: java.util.Date = java.util.Date(),
+    ): Unit =
         withContext(io) {
+            val config = rawConfig.normalized()
             config.validate()?.let { throw SmtpException(it) }
             var socket = socketFactory.connect(config.host, config.port, timeoutMs)
             try {
@@ -134,7 +163,7 @@ class SmtpClient(
             !authLine.contains("LOGIN", ignoreCase = true)
         if (usePlain) {
             command(writer, "AUTH PLAIN ${Base64Codec.encode("\u0000${config.username}\u0000${config.password}")}")
-            expect(reader, 235, stage = "AUTH PLAIN")
+            expectAuth(reader, stage = "AUTH PLAIN")
             return
         }
         command(writer, "AUTH LOGIN")
@@ -142,7 +171,7 @@ class SmtpClient(
         command(writer, Base64Codec.encode(config.username))
         expect(reader, 334, stage = "AUTH username")
         command(writer, Base64Codec.encode(config.password))
-        expect(reader, 235, stage = "AUTH password")
+        expectAuth(reader, stage = "AUTH password")
     }
 
     private fun ehlo(reader: BufferedReader, writer: BufferedWriter): Set<String> {
@@ -159,6 +188,21 @@ class SmtpClient(
     private fun writeRaw(writer: BufferedWriter, text: String) {
         writer.write(text)
         writer.flush()
+    }
+
+    private fun expectAuth(reader: BufferedReader, stage: String) {
+        val reply = readReply(reader, stage)
+        if (reply.first == 235) return
+        val detail = reply.second.joinToString(" ")
+        if (reply.first == 535 || reply.first == 534) {
+            throw SmtpAuthException(
+                "Authentication failed (${reply.first}). For 163/126/QQ use the mailbox " +
+                    "app password (客户端授权码) instead of the login password, put the full " +
+                    "email address in the username field, and make sure SMTP is enabled. " +
+                    "Server said: $detail",
+            )
+        }
+        throw SmtpException("$stage failed: ${reply.first} $detail")
     }
 
     private fun expect(reader: BufferedReader, vararg codes: Int, stage: String) {

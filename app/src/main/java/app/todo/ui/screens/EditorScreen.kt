@@ -1,10 +1,12 @@
 package app.todo.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +25,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -73,9 +76,12 @@ fun EditorScreen(
     var remindAt by rememberSaveable { mutableLongStateOf(0L) }
     var channels by rememberSaveable { mutableIntStateOf(ReminderChannels.NONE) }
     var pinned by rememberSaveable { mutableStateOf(false) }
+    // Kept only so editing an already-completed task does not reopen it; the
+    // completion state is toggled from the list, not from this screen.
     var done by rememberSaveable { mutableStateOf(false) }
     var initialized by rememberSaveable { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var saving by remember { mutableStateOf(false) }
     var picker by remember { mutableStateOf<Picker?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -83,6 +89,10 @@ fun EditorScreen(
     val dueAtOrNull = dueAt.takeIf { it > 0L }
     val remindAtOrNull = remindAt.takeIf { it > 0L }
 
+    val context = LocalContext.current
+    val saveLabel = stringResource(R.string.editor_save)
+    val savingLabel = stringResource(R.string.editor_saving)
+    val savedMessage = stringResource(R.string.editor_saved)
     val titleRequired = stringResource(R.string.editor_required)
     val reminderNeedsTime = stringResource(R.string.editor_reminder_needs_time)
     val deleteLabel = stringResource(R.string.editor_delete)
@@ -128,6 +138,7 @@ fun EditorScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 24.dp),
@@ -236,11 +247,6 @@ fun EditorScreen(
                     checked = pinned,
                     onCheckedChange = { pinned = it },
                 )
-                SwitchRow(
-                    title = stringResource(R.string.home_show_done),
-                    checked = done,
-                    onCheckedChange = { done = it },
-                )
             }
 
             if (error != null) {
@@ -265,16 +271,22 @@ fun EditorScreen(
                                 pinned = pinned,
                                 done = done,
                             )
-                            vm.saveItem(draft) { onDone() }
+                            saving = true
+                            vm.saveItem(draft) {
+                                saving = false
+                                Toast.makeText(context, savedMessage, Toast.LENGTH_SHORT).show()
+                                onDone()
+                            }
                         }
                     }
                 },
                 accent = true,
+                enabled = !saving,
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(vertical = 16.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.editor_save),
+                    text = if (saving) savingLabel else saveLabel,
                     color = palette.onAccent,
                     style = MaterialTheme.typography.titleMedium,
                 )

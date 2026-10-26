@@ -37,6 +37,8 @@
     <string name="editor_channel_clock">时钟闹钟</string>
     <string name="editor_channel_email">邮件</string>
     <string name="editor_pin">置顶</string>
+    <string name="editor_saved">已保存</string>
+    <string name="editor_saving">保存中…</string>
     <string name="editor_save">保存</string>
     <string name="editor_delete">删除</string>
     <string name="editor_clear">清除</string>
@@ -84,6 +86,11 @@
     <string name="settings_exact_alarm_denied">未允许——提醒可能延迟，点击开启</string>
     <string name="settings_email">邮件提醒</string>
     <string name="settings_email_desc">仅当任务的提醒方式包含邮件时使用。</string>
+    <string name="settings_email_hint">163 / 126 / QQ 邮箱：用户名填完整地址（如 you@163.com），密码填邮箱设置里生成的「客户端授权码」，不是登录密码；端口用 465 + TLS，并先在邮箱里开启 SMTP 服务。</string>
+    <string name="mail_error_auth">认证失败：请使用邮箱的「客户端授权码」，用户名填完整邮箱地址。</string>
+    <string name="mail_error_config">邮件配置不完整，或服务器拒绝了该配置。</string>
+    <string name="mail_error_network">网络错误：连不上 SMTP 服务器。</string>
+    <string name="mail_error_unknown">发送失败。</string>
     <string name="settings_email_host">SMTP 服务器</string>
     <string name="settings_email_port">端口</string>
     <string name="settings_email_username">用户名</string>
