@@ -138,6 +138,11 @@ export JAVA_HOME=$HOME/jdk21/Contents/Home     # macOS Temurin 布局
    ```
 
 两条通道产出的 `ReleaseSigning` 完全一致；**都不存在时 release 保持未签名**，不会偷偷用 debug key。
+
+> **本机现状**：仓库根目录已有 git-ignored 的 `keystore.properties`，指向仓库外的
+> `~/keys/todo-release.jks`（CN=Todo，RSA 4096）。`dist/` 里的 release APK 就是用它签的。
+> **这份 jks 一旦丢失，已安装的用户就无法覆盖升级**，请与 `keystore.properties` 一起备份；
+> CI 发版时把同一份 jks base64 后放进 `TODO_KEYSTORE_BASE64`，保持签名一致。
 生成密钥：
 
 ```bash
@@ -175,6 +180,7 @@ git push origin v1.0.1                   # 触发 .github/workflows/release.yml
 ```bash
 ./gradlew assembleRelease -PversionName=1.0.1 -PversionCode=2
 apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+cp app/build/outputs/apk/release/app-release.apk dist/todo-1.0.1-release.apk
 ```
 
 ---

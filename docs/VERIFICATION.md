@@ -24,12 +24,16 @@
 | Debug APK | `assembleDebug` | 29 MB，`app/build/outputs/apk/debug/app-debug.apk` |
 | Release APK | `assembleRelease`（本地 keystore 通道） | 2.9 MB，`apksigner verify` 通过，`zipalign -c 4` 通过 |
 
-Release 签名证书（验证时使用临时生成的测试密钥，位于仓库之外）：
+Release 签名证书（本机持久密钥，位于仓库之外 `~/keys/todo-release.jks`，口令在 git-ignored 的
+`keystore.properties`）：
 
 ```
-Signer #1 certificate DN: CN=Todo Verify, OU=Dev, O=Todo, L=Shanghai, ST=Shanghai, C=CN
-Signer #1 certificate SHA-256: 6260b1f2…6e4e
+Signer #1 certificate DN: CN=Todo, OU=Mobile, O=Todo, L=Shanghai, ST=Shanghai, C=CN
+Signer #1 certificate SHA-256: 720a817308c38d9fa48da8f4d04e6f478eaca78e6d6ef98eb46d5c437549c181
+minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 ```
+
+该 APK 只用于本机安装与验证，未发布到任何公开渠道。
 
 ## 3. 真实格式 / 协议验证（不是"编译通过"）
 
