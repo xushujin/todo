@@ -19,3 +19,6 @@ node_modules/
 
 # local build artifacts copied for delivery
 /dist/
+
+# assistant workspace state
+.workbuddy-ai/
