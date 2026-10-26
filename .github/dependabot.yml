@@ -20,7 +20,9 @@ updates:
       - dependency-name: "com.android.tools.build:gradle"
         update-types: ["version-update:semver-major"]
 
-  - package-ecosystem: github-actions
-    directory: "/"
-    schedule:
-      interval: weekly
+# The github-actions ecosystem is deliberately NOT enabled.
+# Dependabot re-checks it whenever a workflow file changes, so every edit to
+# release.yml spawned a burst of "Update" runs and PRs. Worse, an auto-bumped
+# action version can silently break the release pipeline (setup-android@v3
+# already does, see its removed 'tools' package). Action versions are upgraded
+# by hand, together with a real CI run.
