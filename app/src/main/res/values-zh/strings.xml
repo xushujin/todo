@@ -56,6 +56,7 @@
     <string name="lists_new">新建清单</string>
     <string name="lists_name">清单名称</string>
     <string name="lists_color">颜色</string>
+    <string name="lists_inbox">收件箱</string>
     <string name="lists_delete">删除清单</string>
     <string name="lists_delete_confirm">删除“%1$s”？其中的任务会一起删除。</string>
     <string name="lists_count">%1$d 项任务</string>

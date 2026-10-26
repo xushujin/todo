@@ -83,7 +83,7 @@ class SyncEngineTest {
         }
         override suspend fun upcomingReminders(): List<TodoItem> = emptyList()
         override suspend fun purgeDeleted(cutoff: Long): Int = 0
-        override suspend fun ensureInbox() = Unit
+        override suspend fun ensureInbox(defaultName: String) = Unit
     }
 
     private class FakeStore(var content: String? = null, var revision: String? = null) : GitContentStore {

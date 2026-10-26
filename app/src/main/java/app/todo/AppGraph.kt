@@ -53,6 +53,9 @@ class AppGraph(context: Context) {
     val reminderScheduler = ReminderScheduler(appContext)
     val reminderDelivery = ReminderDelivery(repository, notifier, settings, emailSender)
 
+    /** Localized name for the list re-created when the user deletes every list. */
+    fun inboxName(): String = appContext.getString(R.string.lists_inbox)
+
     fun syncEngine(config: SyncConfig): SyncEngine = SyncEngine(
         store = contentStore(config.provider),
         repository = repository,

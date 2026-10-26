@@ -54,7 +54,7 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
-        viewModelScope.launch { repository.ensureInbox() }
+        viewModelScope.launch { repository.ensureInbox(graph.inboxName()) }
     }
 
     private val _syncOutcome = MutableStateFlow<SyncOutcome>(SyncOutcome.Idle)

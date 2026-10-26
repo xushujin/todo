@@ -16,3 +16,6 @@ keystore.properties
 /app/build
 /web/config.local.js
 node_modules/
+
+# local build artifacts copied for delivery
+/dist/

@@ -62,6 +62,7 @@
     <string name="lists_new">New list</string>
     <string name="lists_name">List name</string>
     <string name="lists_color">Color</string>
+    <string name="lists_inbox">Inbox</string>
     <string name="lists_delete">Delete list</string>
     <string name="lists_delete_confirm">Delete “%1$s”? Its tasks are deleted too.</string>
     <string name="lists_count" tools:ignore="PluralsCandidate">%1$d tasks</string>

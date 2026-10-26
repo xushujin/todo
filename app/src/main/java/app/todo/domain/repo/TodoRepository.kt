@@ -51,7 +51,7 @@ interface TodoRepository {
     suspend fun applySnapshot(snapshot: SyncSnapshot)
     suspend fun upcomingReminders(): List<TodoItem>
     suspend fun purgeDeleted(cutoff: Long): Int
-    suspend fun ensureInbox()
+    suspend fun ensureInbox(defaultName: String)
 }
 
 class SqliteTodoRepository(
@@ -202,13 +202,13 @@ class SqliteTodoRepository(
         removed
     }
 
-    override suspend fun ensureInbox() = withContext(io) {
+    override suspend fun ensureInbox(defaultName: String) = withContext(io) {
         if (dao.lists().isEmpty()) {
             val now = clock.nowMillis()
             dao.upsertList(
                 TodoList(
                     id = TodoDb.INBOX_LIST_ID,
-                    name = "Inbox",
+                    name = defaultName,
                     colorArgb = TodoDb.DEFAULT_LIST_COLOR,
                     sortOrder = 0,
                     updatedAt = now,

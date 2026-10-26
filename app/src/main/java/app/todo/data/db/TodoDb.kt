@@ -3,6 +3,7 @@ package app.todo.data.db
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import app.todo.R
 
 /**
  * Explicit, file-based schema migrations.
@@ -63,7 +64,7 @@ object Schema {
             ?: error("Missing schema resource $path")
 }
 
-class TodoDb(context: Context) : SQLiteOpenHelper(
+class TodoDb(private val context: Context) : SQLiteOpenHelper(
     context.applicationContext,
     DATABASE_NAME,
     null,
@@ -96,7 +97,7 @@ class TodoDb(context: Context) : SQLiteOpenHelper(
         db.execSQL(
             "INSERT OR IGNORE INTO todo_lists (id, name, color_argb, sort_order, created_at, updated_at, deleted_at, device_id) " +
                 "VALUES (?, ?, ?, ?, ?, ?, NULL, ?)",
-            arrayOf<Any>(INBOX_LIST_ID, "Inbox", DEFAULT_LIST_COLOR, 0, now, now, "seed"),
+            arrayOf<Any>(INBOX_LIST_ID, context.getString(R.string.lists_inbox), DEFAULT_LIST_COLOR, 0, now, now, "seed"),
         )
     }
 
