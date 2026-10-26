@@ -119,7 +119,7 @@
     <string name="sync_save">Save configuration</string>
     <string name="sync_now">Sync now</string>
     <string name="sync_test">Test connection</string>
-    <string name="sync_last">Last sync: %1$s</string>
+    <string name="sync_last">Last sync</string>
     <string name="sync_never">never</string>
     <string name="sync_result_ok">Synced. Pulled %1$d, pushed %2$d, conflicts %3$d.</string>
     <string name="sync_result_nochange">Already up to date.</string>

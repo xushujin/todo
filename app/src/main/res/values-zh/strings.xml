@@ -111,7 +111,7 @@
     <string name="sync_save">保存配置</string>
     <string name="sync_now">立即同步</string>
     <string name="sync_test">测试连接</string>
-    <string name="sync_last">上次同步：%1$s</string>
+    <string name="sync_last">上次同步</string>
     <string name="sync_never">从未</string>
     <string name="sync_result_ok">同步完成。拉取 %1$d 条，推送 %2$d 条，冲突 %3$d 条。</string>
     <string name="sync_result_nochange">已是最新。</string>

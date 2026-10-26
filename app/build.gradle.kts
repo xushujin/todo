@@ -1,5 +1,6 @@
 import java.util.Base64
 import java.util.Properties
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -79,8 +80,8 @@ android {
         applicationId = "app.todo"
         minSdk = 30
         targetSdk = 36
-        versionCode = versionCodeOverride ?: 3
-        versionName = versionNameOverride ?: "1.0.2"
+        versionCode = versionCodeOverride ?: 4
+        versionName = versionNameOverride ?: "1.0.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -151,6 +152,14 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_17)
         allWarningsAsErrors.set(true)
     }
+}
+
+tasks.withType<Test>().configureEach {
+    // StringResourceConsistencyTest reads res/ and src/ from disk, which Gradle cannot
+    // infer, so declare them: editing a string must re-run the check instead of
+    // reporting a stale UP-TO-DATE result.
+    inputs.dir(layout.projectDirectory.dir("src/main/res")).withPropertyName("consistencyRes").optional()
+    inputs.dir(layout.projectDirectory.dir("src/main/java")).withPropertyName("consistencySources").optional()
 }
 
 tasks.withType<JavaCompile>().configureEach {

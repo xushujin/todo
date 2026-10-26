@@ -17,7 +17,7 @@
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 全量构建 | `./gradlew clean assembleDebug assembleRelease testDebugUnitTest lintDebug` | **BUILD SUCCESSFUL**，输出中 `w:` / `e:` / `warning` 行数为 **0** |
-| 单元测试 | 同上 | **89 个用例 / 12 个测试类，0 失败 0 跳过** |
+| 单元测试 | 同上 | **92 个用例 / 13 个测试类，0 失败 0 跳过** |
 | Android Lint | `./gradlew lintDebug` | **0 issue**（`app/build/reports/lint-results-debug.xml` 为空） |
 | 迁移校验 | `python3 tools/verify_schema.py` | **passed**（2 个迁移文件、列与索引一致、无破坏性语句） |
 | Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **21 项检查全部通过**（含 Gitee 分支） |
@@ -51,7 +51,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | Web 页面 | Node VM 执行页面真实脚本 + 真实 `fetch` 打 `tools/web_mock_server.py` | 空仓库首写、schema 字段、重新加载、过期令牌触发合并重试、完成/删除写墓碑；Gitee：`POST` 新建、数组响应解析、`PUT` 更新 |
 | Gitee 接口契约 | 对照官方 OpenAPI 描述 `https://gitee.com/api/v5/swagger_doc.json` | 路径 `/api/v5/repos/{owner}/{repo}/contents/{path}`、`access_token` 查询参数、创建 `POST` / 更新 `PUT` 且 `sha` 必填、返回 `content.sha` |
 
-## 4. 单元测试清单（89 用例）
+## 4. 单元测试清单（92 用例）
 
 | 测试类 | 覆盖 |
 | --- | --- |
@@ -65,6 +65,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | `SmtpClientTest` | 真实 SMTP 会话、无认证路径、认证失败、配置校验 |
 | `HttpTransportTest` | 真实 socket HTTP、方法/请求体、404、拒绝明文 HTTP |
 | `GitContentStoreTest` | GitHub/Gitee/Gitea/GitLab 的 URL、鉴权方式、base64 载荷、`sha`/`last_commit_id`、409/400 冲突、404、1 MB 限制、Gitee 数组响应 |
+| `StringResourceConsistencyTest` | 两套语言键一致、占位符一致、带格式符的字符串调用时必须传参（防 `%1$s` 直接显示到界面） |
 | `LockPolicyTest` | 锁定时限：立即、宽限期内不锁、到点锁、无基线时锁 |
 | `SyncEngineTest` | 首次推送、纯拉取、无变化不写、冲突后重读重试、超过重试上限、非法 schema、非法配置 |
 
@@ -121,4 +122,5 @@ git tag v1.0.0 && git push origin v1.0.0
 | 设备无生物识别时开启应用锁会把用户锁死 | 仅在 `availability() == AVAILABLE` 时锁定，设置页开关同步禁用 |
 | `mipmap-anydpi` 不被 AAPT2 接受 | 保留 `mipmap-anydpi-v26`，用 `app/lint.xml` 忽略 `ObsoleteSdkInt` |
 | Lint 43 条告警 | 全部处理：删除未用字符串、KTX 替换、API 常量内联、参数顺序、locale 不静态缓存等，最终 0 issue |
+| 同步页「上次同步」后面显示 `%1$s` | `sync_last` 字符串带占位符却未传参；改为纯标签 + 独立时间值，并新增 `StringResourceConsistencyTest` 双向扫描（已用"故意改回 bug"验证该测试确实会失败） |
 | 每次切应用都要求指纹、且未保存的编辑页丢失 | 增加「锁定时限」（默认 1 分钟）与 `LockPolicy`；应用内容包进 `SaveableStateHolder`，编辑页改用 `rememberSaveable` 并加初始化守卫，解锁后回到原页面、草稿保留 |
