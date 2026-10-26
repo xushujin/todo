@@ -4,7 +4,7 @@
 时钟闹钟 + 邮件双通道提醒，生物识别应用锁，以及通过**自建 Git 仓库**完成的双向同步。
 仓库里还带一个纯静态 Web 页面，读取同一个 `data/todos.json` 做展示与操作。
 
-> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.1` · 支持 Android 11（API 30）– Android 16（API 36）
+> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.2` · 支持 Android 11（API 30）– Android 16（API 36）
 
 ---
 
@@ -18,7 +18,7 @@
 | 邮件提醒 | 自研 SMTP 客户端 `data/mail/SmtpClient.kt`（EHLO / STARTTLS / AUTH LOGIN / AUTH PLAIN / DATA），MIME 由 `MimeMessageBuilder.kt` 生成 |
 | 配置自建 Git 仓库双向同步 | `data/git/`：GitHub / Gitee / Gitea(Forgejo) / GitLab 四种内容 API + `SyncEngine` 读-合并-写（乐观并发） |
 | 自己的 Web 页面读取该仓库 | `web/index.html`（零依赖单文件，同一份 JSON 格式，三方合并） |
-| 生物识别（指纹）解锁 | `security/BiometricGate.kt` + `ui/screens/LockScreen.kt`，冷启动/回前台即锁，锁定时 `FLAG_SECURE` |
+| 生物识别（指纹）解锁 | `security/BiometricGate.kt` + `ui/screens/LockScreen.kt`：冷启动必锁；回前台按「锁定时限」（立即 / 30 秒 / 1 分钟 / 5 分钟 / 15 分钟，默认 1 分钟）决定是否重验；锁定时 `FLAG_SECURE`，解锁后回到原页面并保留未保存草稿 |
 | 拟态风格 + 多套配色 + 全局切换 | `ui/theme/Palette.kt`（5 套）、`ui/theme/TodoTheme.kt`、`ui/components/Neumorphic.kt` |
 | 不引第三方 UI 库 / DI 框架 | 见下节依赖清单，UI 全部 Compose + 自绘组件，依赖注入由 `AppGraph` 手工完成 |
 | 存储方案 + 显式迁移 | 手写 `SQLiteOpenHelper` + `app/src/main/resources/schema/NNNN_*.sql`，无 destructive fallback |
@@ -26,7 +26,7 @@
 | 双通道签名 | `app/build.gradle.kts` 中 `ReleaseSigning`（`keystore.properties` 或 CI 环境变量） |
 | 打 tag 触发 CI 构建并发布 Release | `.github/workflows/release.yml` |
 | 零编译警告 | `allWarningsAsErrors = true` + `-Xlint:all -Werror`，实际构建无警告输出 |
-| 核心逻辑单测 | `app/src/test/` 共 11 个测试类，覆盖 JSON/Base64/合并/协议/HTTP/SMTP/迁移/查询 |
+| 核心逻辑单测 | `app/src/test/` 共 12 个测试类，覆盖 JSON/Base64/合并/协议/HTTP/SMTP/迁移/查询 |
 | 二进制/格式类解析用真实文件验证 | 测试用真实结构的 GitHub/GitLab 响应样本；SMTP 走真实 socket；HTTP 走真实本地服务器；schema 用真实 SQLite 执行 |
 
 ---
@@ -281,7 +281,7 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 ## 11. 测试与验证
 
 ```bash
-./gradlew testDebugUnitTest        # 11 个测试类、79 个用例
+./gradlew testDebugUnitTest        # 12 个测试类、89 个用例
 python3 tools/verify_schema.py     # 真实 SQLite 执行迁移
 node tools/web_smoke_test.mjs      # Web 页面逻辑（需先起 mock server）
 ./gradlew lintDebug                # Android Lint，当前 0 issue

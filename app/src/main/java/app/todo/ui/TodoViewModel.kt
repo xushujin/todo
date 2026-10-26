@@ -76,6 +76,8 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
 
     fun setBiometric(enabled: Boolean) = settings.setBiometricEnabled(enabled)
 
+    fun setLockTimeout(seconds: Int) = settings.setLockTimeoutSeconds(seconds)
+
     fun canScheduleExactAlarms(): Boolean = graph.reminderScheduler.canScheduleExactAlarms()
 
     fun saveItem(draft: TodoDraft, onSaved: (TodoItem) -> Unit = {}) {

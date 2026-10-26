@@ -73,6 +73,13 @@
     <string name="settings_theme">Theme</string>
     <string name="settings_security">Security</string>
     <string name="settings_biometric">Unlock with biometrics</string>
+    <string name="settings_lock_timeout">Lock after</string>
+    <string name="settings_lock_timeout_desc">Ask for biometrics again after this much time in the background.</string>
+    <string name="lock_timeout_immediate">Immediately</string>
+    <string name="lock_timeout_30s">30 seconds</string>
+    <string name="lock_timeout_1m">1 minute</string>
+    <string name="lock_timeout_5m">5 minutes</string>
+    <string name="lock_timeout_15m">15 minutes</string>
     <string name="settings_biometric_desc">Require fingerprint or device credential when the app opens.</string>
     <string name="settings_biometric_unavailable">No biometric or device credential enrolled on this device.</string>
     <string name="settings_notifications">Notifications</string>

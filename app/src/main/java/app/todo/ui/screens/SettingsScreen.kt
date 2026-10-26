@@ -40,6 +40,7 @@ import app.todo.data.mail.SmtpConfig
 import app.todo.data.mail.SmtpSecurity
 import app.todo.domain.model.TodoSort
 import app.todo.ui.TodoViewModel
+import app.todo.ui.components.DropdownField
 import app.todo.ui.components.LabeledValueRow
 import app.todo.ui.components.NeumorphicButton
 import app.todo.ui.components.NeumorphicChip
@@ -62,6 +63,7 @@ fun SettingsScreen(
 
     val themeId by vm.settings.themeId.collectAsStateWithLifecycle()
     val biometricEnabled by vm.settings.biometricEnabled.collectAsStateWithLifecycle()
+    val lockTimeout by vm.settings.lockTimeoutSeconds.collectAsStateWithLifecycle()
     val showDone by vm.settings.showDone.collectAsStateWithLifecycle()
     val sort by vm.settings.sort.collectAsStateWithLifecycle()
     val emailConfig by vm.settings.emailConfig.collectAsStateWithLifecycle()
@@ -163,6 +165,20 @@ fun SettingsScreen(
                     onCheckedChange = vm::setBiometric,
                     enabled = biometricAvailable,
                 )
+                if (biometricEnabled && biometricAvailable) {
+                    DropdownField(
+                        label = stringResource(R.string.settings_lock_timeout),
+                        current = lockTimeout,
+                        options = lockTimeoutOptions,
+                        optionLabel = { seconds -> lockTimeoutLabel(seconds) },
+                        onSelect = vm::setLockTimeout,
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_lock_timeout_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = palette.textSecondary,
+                    )
+                }
             }
 
             SectionCard(title = stringResource(R.string.settings_notifications)) {
@@ -224,6 +240,19 @@ fun SettingsScreen(
         }
     }
 }
+
+private val lockTimeoutOptions = listOf(0, 30, 60, 300, 900)
+
+@Composable
+private fun lockTimeoutLabel(seconds: Int): String = stringResource(
+    when (seconds) {
+        0 -> R.string.lock_timeout_immediate
+        30 -> R.string.lock_timeout_30s
+        60 -> R.string.lock_timeout_1m
+        300 -> R.string.lock_timeout_5m
+        else -> R.string.lock_timeout_15m
+    },
+)
 
 @Composable
 private fun EmailSettingsSection(

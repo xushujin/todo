@@ -61,8 +61,11 @@ SettingsStore → TodoDb → TodoDao → SqliteTodoRepository
 ## 5. 应用锁
 
 * `MainActivity` 继承 `FragmentActivity`（生物识别提示需要）
-* `onCreate` 时若开关开启则锁定；`onStart`（非首次）再次锁定 → 回到前台必须重新验证
+* `onCreate` 时若开关开启则锁定；回前台是否重验由 `LockPolicy` + 设置项「锁定时限」决定
+  （立即 / 30 秒 / 1 分钟 / 5 分钟 / 15 分钟，默认 1 分钟），短暂切走不会打断正在编辑的内容
 * 锁定时只渲染 `LockScreen`，不给下层内容任何曝光；同时加 `FLAG_SECURE`
+* 应用内容包在 `rememberSaveableStateHolder().SaveableStateProvider("app")` 里，编辑页的输入用
+  `rememberSaveable`，所以锁屏替换内容后，解锁仍回到原页面、草稿不丢（进程被杀也能恢复）
 * `BiometricGate` 使用 `BIOMETRIC_WEAK | DEVICE_CREDENTIAL`，无指纹设备可用 PIN/图案/密码
 * 未录入任何生物识别/凭证时，`availability()` 返回 `NONE_ENROLLED`，UI 应提示（见已知限制）
 

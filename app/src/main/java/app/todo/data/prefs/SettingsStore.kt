@@ -47,6 +47,10 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
     private val _biometricEnabled = MutableStateFlow(prefs.getBoolean(KEY_BIOMETRIC, false))
     val biometricEnabled: StateFlow<Boolean> = _biometricEnabled.asStateFlow()
 
+    private val _lockTimeoutSeconds =
+        MutableStateFlow(prefs.getInt(KEY_LOCK_TIMEOUT, DEFAULT_LOCK_TIMEOUT_SECONDS))
+    val lockTimeoutSeconds: StateFlow<Int> = _lockTimeoutSeconds.asStateFlow()
+
     private val _lastSyncAt = MutableStateFlow(prefs.getLong(KEY_LAST_SYNC, 0L))
     val lastSyncAt: StateFlow<Long> = _lastSyncAt.asStateFlow()
 
@@ -74,6 +78,11 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
     fun setBiometricEnabled(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_BIOMETRIC, enabled) }
         _biometricEnabled.value = enabled
+    }
+
+    fun setLockTimeoutSeconds(seconds: Int) {
+        prefs.edit { putInt(KEY_LOCK_TIMEOUT, seconds) }
+        _lockTimeoutSeconds.value = seconds
     }
 
     fun setLastSyncAt(value: Long) {
@@ -150,12 +159,16 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
     companion object {
         const val DEFAULT_THEME = "cloud"
 
+        /** 0 = lock immediately; otherwise the grace period in seconds. */
+        const val DEFAULT_LOCK_TIMEOUT_SECONDS = 60
+
         private const val FILE_NAME = "todo.settings"
         private const val KEY_DEVICE_ID = "deviceId"
         private const val KEY_THEME = "themeId"
         private const val KEY_SORT = "sort"
         private const val KEY_SHOW_DONE = "showDone"
         private const val KEY_BIOMETRIC = "biometricEnabled"
+        private const val KEY_LOCK_TIMEOUT = "lockTimeoutSeconds"
         private const val KEY_LAST_SYNC = "lastSyncAt"
         private const val KEY_SYNC = "syncConfig"
         private const val KEY_EMAIL = "emailConfig"

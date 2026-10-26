@@ -66,6 +66,13 @@
     <string name="settings_theme">主题</string>
     <string name="settings_security">安全</string>
     <string name="settings_biometric">生物识别解锁</string>
+    <string name="settings_lock_timeout">锁定时限</string>
+    <string name="settings_lock_timeout_desc">离开应用超过该时长后，再次打开需要重新验证。</string>
+    <string name="lock_timeout_immediate">立即</string>
+    <string name="lock_timeout_30s">30 秒</string>
+    <string name="lock_timeout_1m">1 分钟</string>
+    <string name="lock_timeout_5m">5 分钟</string>
+    <string name="lock_timeout_15m">15 分钟</string>
     <string name="settings_biometric_desc">打开应用时要求指纹或设备凭证验证。</string>
     <string name="settings_biometric_unavailable">此设备未录入生物识别或设备凭证。</string>
     <string name="settings_notifications">通知</string>

@@ -2,6 +2,7 @@ package app.todo
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,12 +14,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.todo.security.BiometricGate
+import app.todo.security.LockPolicy
 import app.todo.ui.AppRoot
 import app.todo.ui.screens.LockScreen
 import app.todo.ui.theme.Palettes
@@ -34,15 +37,19 @@ class MainActivity : FragmentActivity() {
     private val lockError = mutableStateOf<String?>(null)
     private val pendingTodoId = mutableStateOf<String?>(null)
     private var startedOnce = false
+    private var backgroundedAt = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         biometricGate = BiometricGate(this)
-        locked.value = shouldLock()
+        locked.value = biometricLockEnabled()
         pendingTodoId.value = intent?.getStringExtra(EXTRA_TODO_ID)
 
         setContent {
+            // Keeps the navigation stack and the (unsaved) editor fields alive while the
+            // lock screen replaces the app content, so unlocking returns to the same page.
+            val stateHolder = rememberSaveableStateHolder()
             val themeId by graph.settings.themeId.collectAsStateWithLifecycle()
             val palette = Palettes.byId(themeId)
             TodoTheme(palette) {
@@ -56,7 +63,9 @@ class MainActivity : FragmentActivity() {
                                 onUnlock = { requestUnlock() },
                             )
                         } else {
-                            AppRoot(graph = graph, initialTodoId = pendingTodoId.value)
+                            stateHolder.SaveableStateProvider(APP_STATE_KEY) {
+                                AppRoot(graph = graph, initialTodoId = pendingTodoId.value)
+                            }
                         }
                     }
                 }
@@ -69,11 +78,19 @@ class MainActivity : FragmentActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (startedOnce && shouldLock()) {
-            lockError.value = null
-            locked.value = true
+        if (startedOnce && biometricLockEnabled()) {
+            val elapsed = if (backgroundedAt == 0L) null else SystemClock.elapsedRealtime() - backgroundedAt
+            if (LockPolicy.shouldLockOnReturn(graph.settings.lockTimeoutSeconds.value, elapsed)) {
+                lockError.value = null
+                locked.value = true
+            }
         }
         startedOnce = true
+    }
+
+    override fun onStop() {
+        backgroundedAt = SystemClock.elapsedRealtime()
+        super.onStop()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -89,7 +106,7 @@ class MainActivity : FragmentActivity() {
 
     /** Locking is only allowed when the device can actually authenticate, otherwise the
      *  user would be trapped on the lock screen with no way in. */
-    private fun shouldLock(): Boolean =
+    private fun biometricLockEnabled(): Boolean =
         graph.settings.biometricEnabled.value &&
             biometricGate.availability() == BiometricGate.Availability.AVAILABLE
 
@@ -131,5 +148,6 @@ class MainActivity : FragmentActivity() {
 
     companion object {
         const val EXTRA_TODO_ID = "app.todo.extra.TODO_ID"
+        private const val APP_STATE_KEY = "app"
     }
 }
