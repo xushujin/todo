@@ -35,7 +35,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         with:
           # Default packages include the legacy 'tools' package, which no longer
           # exists in the SDK repo and makes sdkmanager exit 1. Install only what
