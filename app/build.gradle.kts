@@ -112,6 +112,15 @@ android {
         }
     }
 
+    // Rename the released APK to Todo-<version>-release.apk instead of app-release.apk.
+    applicationVariants.configureEach { variant ->
+        if (variant.name == "release") {
+            outputs.configureEach {
+                outputFileName = "Todo-${variant.versionName ?: "dev"}-release.apk"
+            }
+        }
+    }
+
     androidResources {
         localeFilters += listOf("en", "zh")
     }
