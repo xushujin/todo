@@ -26,6 +26,7 @@ import app.todo.core.time.TimeText
 import app.todo.data.git.GitErrorKind
 import app.todo.data.git.GitProviderKind
 import app.todo.data.git.SyncConfig
+import app.todo.ui.AutoSyncState
 import app.todo.ui.ConnectionOutcome
 import app.todo.ui.SyncOutcome
 import app.todo.ui.TodoViewModel
@@ -36,6 +37,7 @@ import app.todo.ui.components.NeumorphicChip
 import app.todo.ui.components.NeumorphicTextField
 import app.todo.ui.components.ScreenHeader
 import app.todo.ui.components.SectionCard
+import app.todo.ui.components.SwitchRow
 import app.todo.ui.theme.LocalTodoPalette
 
 /**
@@ -168,6 +170,8 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
     val saved by vm.settings.syncConfig.collectAsStateWithLifecycle()
     val lastSyncAt by vm.settings.lastSyncAt.collectAsStateWithLifecycle()
     val outcome by vm.syncOutcome.collectAsStateWithLifecycle()
+    val autoSync by vm.autoSyncState.collectAsStateWithLifecycle()
+    val autoSyncEnabled by vm.settings.autoSyncEnabled.collectAsStateWithLifecycle()
 
     var provider by remember(saved) { mutableStateOf(saved?.provider ?: GitProviderKind.GITHUB) }
     var baseUrl by remember(saved) { mutableStateOf(saved?.baseUrl ?: GitProviderKind.GITHUB.defaultBaseUrl) }
@@ -316,6 +320,25 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
             }
 
             SectionCard {
+                SwitchRow(
+                    title = stringResource(R.string.sync_auto_title),
+                    subtitle = stringResource(R.string.sync_auto_desc),
+                    checked = autoSyncEnabled,
+                    onCheckedChange = vm::setAutoSync,
+                )
+                when (autoSync) {
+                    AutoSyncState.Syncing -> Text(
+                        text = stringResource(R.string.sync_auto_running),
+                        color = palette.textSecondary,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    is AutoSyncState.Failed -> Text(
+                        text = stringResource(R.string.sync_auto_failed),
+                        color = palette.warning,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    AutoSyncState.Idle -> Unit
+                }
                 SyncFeedback(
                     connection = connection,
                     formMessage = formMessage,

@@ -42,6 +42,7 @@ import app.todo.domain.model.ReminderChannels
 import app.todo.domain.model.TodoItem
 import app.todo.domain.model.TodoList
 import app.todo.domain.model.TodoSort
+import app.todo.ui.AutoSyncState
 import app.todo.ui.TodoViewModel
 import app.todo.ui.components.NeumorphicChip
 import app.todo.ui.components.NeumorphicIconButton
@@ -70,6 +71,7 @@ fun HomeScreen(
     val filter by vm.filter.collectAsStateWithLifecycle()
     val sort by vm.settings.sort.collectAsStateWithLifecycle()
     val showDone by vm.settings.showDone.collectAsStateWithLifecycle()
+    val autoSync by vm.autoSyncState.collectAsStateWithLifecycle()
     val listsById = remember(lists) { lists.associateBy { it.id } }
 
     Box(Modifier.fillMaxSize()) {
@@ -80,7 +82,11 @@ fun HomeScreen(
                     R.string.home_subtitle,
                     allItems.count { !it.done },
                     allItems.count { it.done },
-                ),
+                ) + when (autoSync) {
+                    AutoSyncState.Syncing -> stringResource(R.string.home_sync_syncing)
+                    is AutoSyncState.Failed -> stringResource(R.string.home_sync_failed)
+                    AutoSyncState.Idle -> ""
+                },
                 actions = {
                     NeumorphicIconButton(
                         kind = TodoIconKind.LIST,

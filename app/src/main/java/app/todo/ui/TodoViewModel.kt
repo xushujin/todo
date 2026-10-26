@@ -20,12 +20,17 @@ import app.todo.domain.model.TodoList
 import app.todo.domain.model.TodoQuery
 import app.todo.domain.model.TodoSort
 import app.todo.domain.repo.TodoDraft
+import app.todo.domain.sync.SyncPolicy
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 
 sealed interface SyncOutcome {
@@ -40,6 +45,12 @@ enum class MailErrorKind { AUTH, CONFIG, NETWORK, UNKNOWN }
 sealed interface MailTestResult {
     data object Sent : MailTestResult
     data class Failed(val kind: MailErrorKind, val detail: String) : MailTestResult
+}
+
+sealed interface AutoSyncState {
+    data object Idle : AutoSyncState
+    data object Syncing : AutoSyncState
+    data class Failed(val kind: GitErrorKind) : AutoSyncState
 }
 
 sealed interface ConnectionOutcome {
@@ -77,6 +88,15 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
     private val _syncOutcome = MutableStateFlow<SyncOutcome>(SyncOutcome.Idle)
     val syncOutcome: StateFlow<SyncOutcome> = _syncOutcome.asStateFlow()
 
+    private val _autoSyncState = MutableStateFlow<AutoSyncState>(AutoSyncState.Idle)
+    val autoSyncState: StateFlow<AutoSyncState> = _autoSyncState.asStateFlow()
+
+    /** Serialises manual and automatic syncs so two runs never interleave. */
+    private val syncMutex = Mutex()
+    private var debounceJob: Job? = null
+    private var lastSyncAttemptAt = 0L
+    private var foreground = false
+
     fun setMode(mode: HomeMode) {
         _filter.value = _filter.value.copy(mode = mode)
     }
@@ -102,6 +122,7 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
             val item = repository.saveItem(draft)
             graph.reminderScheduler.schedule(item)
             onSaved(item)
+            scheduleAutoSync()
         }
     }
 
@@ -109,6 +130,7 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
         viewModelScope.launch {
             val updated = repository.setDone(item.id, !item.done) ?: return@launch
             if (updated.done) graph.reminderScheduler.cancel(updated.id) else graph.reminderScheduler.schedule(updated)
+            scheduleAutoSync()
         }
     }
 
@@ -118,6 +140,7 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
         viewModelScope.launch {
             graph.reminderScheduler.cancel(id)
             repository.deleteItem(id)
+            scheduleAutoSync()
         }
     }
 
@@ -137,17 +160,22 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
             )
             val saved = repository.saveItem(draft)
             graph.reminderScheduler.schedule(saved)
+            scheduleAutoSync()
         }
     }
 
     fun saveList(id: String?, name: String, colorArgb: Long) {
-        viewModelScope.launch { repository.saveList(id, name, colorArgb) }
+        viewModelScope.launch {
+            repository.saveList(id, name, colorArgb)
+            scheduleAutoSync()
+        }
     }
 
     fun deleteList(list: TodoList) {
         viewModelScope.launch {
             items.value.filter { it.listId == list.id }.forEach { graph.reminderScheduler.cancel(it.id) }
             repository.deleteList(list.id)
+            scheduleAutoSync()
         }
     }
 
@@ -214,6 +242,60 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
         else -> GitErrorKind.UNKNOWN
     }
 
+    fun setAutoSync(enabled: Boolean) {
+        settings.setAutoSyncEnabled(enabled)
+        if (!enabled) {
+            debounceJob?.cancel()
+            _autoSyncState.value = AutoSyncState.Idle
+        } else {
+            onForeground()
+        }
+    }
+
+    /** Called when the app becomes visible: pull remote changes, at most once a minute. */
+    fun onForeground() {
+        foreground = true
+        if (!settings.autoSyncEnabled.value) return
+        if (!SyncPolicy.shouldSyncOnForeground(System.currentTimeMillis(), lastSyncAttemptAt)) return
+        viewModelScope.launch { runAutoSync() }
+    }
+
+    fun onBackground() {
+        foreground = false
+    }
+
+    /**
+     * Local edits are batched: a burst of changes produces one request, not one per
+     * keystroke, and the sync only runs while the app is in front.
+     */
+    private fun scheduleAutoSync() {
+        if (!settings.autoSyncEnabled.value) return
+        debounceJob?.cancel()
+        debounceJob = viewModelScope.launch {
+            delay(SyncPolicy.LOCAL_CHANGE_DEBOUNCE_MS)
+            runAutoSync()
+        }
+    }
+
+    private suspend fun runAutoSync() {
+        if (!foreground || !settings.autoSyncEnabled.value) return
+        if (_autoSyncState.value == AutoSyncState.Syncing) return
+        val config = settings.syncConfig.value?.normalized() ?: return
+        if (!config.isConfigured) return
+
+        _autoSyncState.value = AutoSyncState.Syncing
+        val result = runCatching {
+            syncMutex.withLock { graph.syncEngine(config).sync(config, settings.lastSyncAt.value) }
+        }
+        lastSyncAttemptAt = System.currentTimeMillis()
+        result.onSuccess { report ->
+            settings.setLastSyncAt(report.syncedAt)
+            _autoSyncState.value = AutoSyncState.Idle
+        }.onFailure { error ->
+            _autoSyncState.value = AutoSyncState.Failed(kindOf(error))
+        }
+    }
+
     fun syncNow() {
         val config = settings.syncConfig.value?.normalized()
         if (config == null || !config.isConfigured) {
@@ -223,9 +305,13 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
         if (_syncOutcome.value is SyncOutcome.Running) return
         _syncOutcome.value = SyncOutcome.Running
         viewModelScope.launch {
-            val result = runCatching { graph.syncEngine(config).sync(config, settings.lastSyncAt.value) }
+            val result = runCatching {
+                syncMutex.withLock { graph.syncEngine(config).sync(config, settings.lastSyncAt.value) }
+            }
+            lastSyncAttemptAt = System.currentTimeMillis()
             result.onSuccess { report ->
                 settings.setLastSyncAt(report.syncedAt)
+                _autoSyncState.value = AutoSyncState.Idle
                 _syncOutcome.value = SyncOutcome.Success(report.pulled, report.pushed, report.conflicts)
             }.onFailure { error ->
                 _syncOutcome.value = SyncOutcome.Failure(

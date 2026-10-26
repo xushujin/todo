@@ -17,7 +17,7 @@
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 全量构建 | `./gradlew clean assembleDebug assembleRelease testDebugUnitTest lintDebug` | **BUILD SUCCESSFUL**，输出中 `w:` / `e:` / `warning` 行数为 **0** |
-| 单元测试 | 同上 | **109 个用例 / 13 个测试类，0 失败 0 跳过** |
+| 单元测试 | 同上 | **113 个用例 / 14 个测试类，0 失败 0 跳过** |
 | Android Lint | `./gradlew lintDebug` | **0 issue**（`app/build/reports/lint-results-debug.xml` 为空） |
 | 迁移校验 | `python3 tools/verify_schema.py` | **passed**（2 个迁移文件、列与索引一致、无破坏性语句） |
 | Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **21 项检查全部通过**（含 Gitee 分支） |
@@ -51,7 +51,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | Web 页面 | Node VM 执行页面真实脚本 + 真实 `fetch` 打 `tools/web_mock_server.py` | 空仓库首写、schema 字段、重新加载、过期令牌触发合并重试、完成/删除写墓碑；Gitee：`POST` 新建、数组响应解析、`PUT` 更新 |
 | Gitee 接口契约 | 对照官方 OpenAPI 描述 `https://gitee.com/api/v5/swagger_doc.json` | 路径 `/api/v5/repos/{owner}/{repo}/contents/{path}`、`access_token` 查询参数、创建 `POST` / 更新 `PUT` 且 `sha` 必填、返回 `content.sha` |
 
-## 4. 单元测试清单（109 用例）
+## 4. 单元测试清单（113 用例）
 
 | 测试类 | 覆盖 |
 | --- | --- |
@@ -66,6 +66,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | `HttpTransportTest` | 真实 socket HTTP、方法/请求体、404、拒绝明文 HTTP |
 | `GitContentStoreTest` | GitHub/Gitee/Gitea/GitLab 的 URL、鉴权方式、base64 载荷、`sha`/`last_commit_id`、409/400 冲突、404、1 MB 限制、Gitee 数组响应、0 字节空文件、默认分支查询、错误消息脱敏 |
 | `StringResourceConsistencyTest` | 两套语言键一致、占位符一致、带格式符的字符串调用时必须传参（防 `%1$s` 直接显示到界面） |
+| `SyncPolicyTest` | 前台同步节流（首次必跑、60 秒内跳过）、本地改动防抖窗口 |
 | `LockPolicyTest` | 锁定时限：立即、宽限期内不锁、到点锁、无基线时锁 |
 | `SyncEngineTest` | 首次推送、纯拉取、无变化不写、冲突后重读重试、超过重试上限、非法 schema、非法配置、空文件当空文档、分支不存在时用默认分支解释 404 |
 

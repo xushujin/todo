@@ -115,6 +115,12 @@
     <string name="sync_error_network">网络错误——请检查网络连接。</string>
     <string name="sync_error_config">配置不完整。</string>
     <string name="sync_error_unknown">同步失败。</string>
+    <string name="sync_auto_title">自动同步</string>
+    <string name="sync_auto_desc">修改任务或打开应用后自动同步</string>
+    <string name="sync_auto_running">后台同步中…</string>
+    <string name="sync_auto_failed">后台同步失败，稍后会自动重试</string>
+    <string name="home_sync_syncing"> · 同步中…</string>
+    <string name="home_sync_failed"> · 同步失败</string>
     <string name="sync_provider">服务商</string>
     <string name="sync_base_url">服务器地址</string>
     <string name="sync_base_url_hint">https://github.com</string>

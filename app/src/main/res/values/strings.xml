@@ -123,6 +123,12 @@
     <string name="sync_error_network">Network error — check the connection.</string>
     <string name="sync_error_config">Configuration is incomplete.</string>
     <string name="sync_error_unknown">Sync failed.</string>
+    <string name="sync_auto_title">Auto sync</string>
+    <string name="sync_auto_desc">Sync after changes and when the app opens</string>
+    <string name="sync_auto_running">Syncing in the background…</string>
+    <string name="sync_auto_failed">Background sync failed; it will retry later</string>
+    <string name="home_sync_syncing"> · syncing…</string>
+    <string name="home_sync_failed"> · sync failed</string>
     <string name="sync_provider">Provider</string>
     <string name="sync_base_url">Server URL</string>
     <string name="sync_base_url_hint">https://github.com</string>

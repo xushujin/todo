@@ -69,7 +69,17 @@ SettingsStore → TodoDb → TodoDao → SqliteTodoRepository
 * `BiometricGate` 使用 `BIOMETRIC_WEAK | DEVICE_CREDENTIAL`，无指纹设备可用 PIN/图案/密码
 * 未录入任何生物识别/凭证时，`availability()` 返回 `NONE_ENROLLED`，UI 应提示（见已知限制）
 
-## 6. 提醒链路
+## 6. 自动同步
+
+`TodoViewModel` 里有一把 `Mutex` 和两个入口：
+
+* `onForeground()`（`AppRoot` 监听 `ON_START`）：拉取远端改动，`SyncPolicy` 保证 60 秒内只跑一次；
+* `scheduleAutoSync()`（保存/完成/删除/清单变更后）：3 秒防抖，避免连续编辑触发多次请求。
+
+自动同步只在应用可见时执行，失败只更新 `AutoSyncState`（首页副标题显示"同步失败"），不弹错误；
+手动同步的结果仍然走 `SyncOutcome`，两者共用互斥锁，不会并发写同一个文件。
+
+## 7. 提醒链路
 
 ```
 保存任务 → ReminderScheduler.schedule(item)

@@ -47,6 +47,9 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
     private val _biometricEnabled = MutableStateFlow(prefs.getBoolean(KEY_BIOMETRIC, false))
     val biometricEnabled: StateFlow<Boolean> = _biometricEnabled.asStateFlow()
 
+    private val _autoSyncEnabled = MutableStateFlow(prefs.getBoolean(KEY_AUTO_SYNC, true))
+    val autoSyncEnabled: StateFlow<Boolean> = _autoSyncEnabled.asStateFlow()
+
     private val _lockTimeoutSeconds =
         MutableStateFlow(prefs.getInt(KEY_LOCK_TIMEOUT, DEFAULT_LOCK_TIMEOUT_SECONDS))
     val lockTimeoutSeconds: StateFlow<Int> = _lockTimeoutSeconds.asStateFlow()
@@ -78,6 +81,11 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
     fun setBiometricEnabled(enabled: Boolean) {
         prefs.edit { putBoolean(KEY_BIOMETRIC, enabled) }
         _biometricEnabled.value = enabled
+    }
+
+    fun setAutoSyncEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_AUTO_SYNC, enabled) }
+        _autoSyncEnabled.value = enabled
     }
 
     fun setLockTimeoutSeconds(seconds: Int) {
@@ -168,6 +176,7 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
         private const val KEY_SORT = "sort"
         private const val KEY_SHOW_DONE = "showDone"
         private const val KEY_BIOMETRIC = "biometricEnabled"
+        private const val KEY_AUTO_SYNC = "autoSyncEnabled"
         private const val KEY_LOCK_TIMEOUT = "lockTimeoutSeconds"
         private const val KEY_LAST_SYNC = "lastSyncAt"
         private const val KEY_SYNC = "syncConfig"
