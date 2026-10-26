@@ -58,6 +58,17 @@ class StringResourceConsistencyTest {
     }
 
     @Test
+    fun apostrophesAreEscaped() {
+        // AAPT2 refuses an unescaped apostrophe ("Invalid unicode escape sequence"),
+        // which is a build error rather than a warning — catch it in the test instead.
+        val unescaped = Regex("""(?<!\\)'""")
+        val offenders = (entries(stringsEn) + entries(stringsZh))
+            .filterValues { unescaped.containsMatchIn(it) }
+            .keys
+        assertTrue("unescaped apostrophes in: $offenders", offenders.isEmpty())
+    }
+
+    @Test
     fun formatStringsAreAlwaysCalledWithArguments() {
         // Check both locales: a placeholder that only exists in one of them is still
         // rendered literally for users of that language.

@@ -107,6 +107,15 @@
 
     <!-- Sync -->
     <string name="sync_title">Git sync</string>
+    <string name="sync_test_ok_file_missing">Connected. %1$s does not exist on branch %2$s yet — the first sync will create it.</string>
+    <string name="sync_branch_hint">This repository\'s default branch is %1$s, but the setting says %2$s.</string>
+    <string name="sync_use_branch">Use %1$s</string>
+    <string name="sync_error_auth">Access denied — check the token\'s repository permission.</string>
+    <string name="sync_error_not_found">Repository, branch or file path not found.</string>
+    <string name="sync_error_conflict">The remote kept changing; try again.</string>
+    <string name="sync_error_network">Network error — check the connection.</string>
+    <string name="sync_error_config">Configuration is incomplete.</string>
+    <string name="sync_error_unknown">Sync failed.</string>
     <string name="sync_provider">Provider</string>
     <string name="sync_base_url">Server URL</string>
     <string name="sync_base_url_hint">https://github.com</string>
@@ -124,8 +133,6 @@
     <string name="sync_result_ok">Synced. Pulled %1$d, pushed %2$d, conflicts %3$d.</string>
     <string name="sync_result_nochange">Already up to date.</string>
     <string name="sync_running">Syncing…</string>
-    <string name="sync_error">Sync failed: %1$s</string>
-    <string name="sync_not_configured">Configure the repository first.</string>
     <string name="sync_conflicts">Conflicts resolved by latest edit: %1$d</string>
     <string name="sync_insecure_warning">Plain HTTP is not allowed for remote servers.</string>
 

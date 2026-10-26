@@ -37,10 +37,14 @@ class ContentsApiStore(
         val url = contentUrl(config, withRef = true)
         val response = transport.execute(HttpRequest("GET", url, headers(config)))
         return when (response.status) {
-            200 -> parseContent(response.bodyText, config.path)
+            200 -> parseContentOrEmpty(response.bodyText, config)
             404 -> null
             401, 403 -> throw GitAuthException(authMessage(response))
-            else -> throw GitException("GET $url failed: ${describe(response)}", response.status)
+            else -> throw GitException(
+                "GET ${redactSecrets(url)} failed: ${describe(response)}",
+                response.status,
+                kindFor(response.status),
+            )
         }
     }
 
@@ -89,21 +93,45 @@ class ContentsApiStore(
             400 -> if (expectedRevision != null) {
                 throw GitConflictException("Remote changed meanwhile: ${describe(response)}")
             } else {
-                throw GitException("$method $url failed: ${describe(response)}", response.status)
+                throw GitException(
+                    "$method ${redactSecrets(url)} failed: ${describe(response)}",
+                    response.status,
+                    kindFor(response.status),
+                )
             }
-            else -> throw GitException("$method $url failed: ${describe(response)}", response.status)
+            else -> throw GitException(
+                "$method ${redactSecrets(url)} failed: ${describe(response)}",
+                response.status,
+                kindFor(response.status),
+            )
         }
     }
 
-    private fun contentUrl(config: SyncConfig, withRef: Boolean): String {
+    override suspend fun defaultBranch(config: SyncConfig): String? {
+        val response = transport.execute(HttpRequest("GET", repoUrl(config), headers(config)))
+        if (response.status != 200) return null
+        return JsonValue.parseOrNull(response.bodyText)?.str("default_branch")
+    }
+
+    private fun repoUrl(config: SyncConfig): String =
+        "${config.baseUrl.trimEnd('/')}${repoPrefix()}/${GitEncoding.encodeSegment(config.owner)}/" +
+            GitEncoding.encodeSegment(config.repo)
+
+    private fun repoPrefix(): String = when (kind) {
+        GitProviderKind.GITHUB -> "/repos"
+        GitProviderKind.GITEE -> "/api/v5/repos"
+        GitProviderKind.GITEA -> "/api/v1/repos"
+        GitProviderKind.GITLAB -> error("GitLab uses a different URL layout")
+    }
+
+    private fun contentUrl(
+        config: SyncConfig,
+        withRef: Boolean,
+        pathOverride: String = config.path,
+    ): String {
         val root = config.baseUrl.trimEnd('/')
-        val prefix = when (kind) {
-            GitProviderKind.GITHUB -> "/repos"
-            GitProviderKind.GITEE -> "/api/v5/repos"
-            GitProviderKind.GITEA -> "/api/v1/repos"
-            GitProviderKind.GITLAB -> error("GitLab uses a different URL layout")
-        }
-        val path = GitEncoding.encodePath(config.path)
+        val prefix = repoPrefix()
+        val path = GitEncoding.encodePath(pathOverride)
         val base = "$root$prefix/${GitEncoding.encodeSegment(config.owner)}/" +
             "${GitEncoding.encodeSegment(config.repo)}/contents/$path"
         val query = buildList {
@@ -132,6 +160,38 @@ class ContentsApiStore(
         )
     }
 
+    /**
+     * Gitee answers `200` with an empty body for a 0-byte file, which is not JSON at
+     * all. The blob sha is only available from the parent directory listing, so use
+     * that as a fallback instead of failing with "unexpected response".
+     */
+    private suspend fun parseContentOrEmpty(body: String, config: SyncConfig): RemoteFile {
+        val parsed = JsonValue.parseOrNull(body)
+        // Gitee has been observed answering either an empty body or `[]` for a 0-byte
+        // file; both mean "the file exists but carries no content".
+        val emptyResponse = body.isBlank() || (parsed is JsonValue.Arr && parsed.items.isEmpty())
+        if (!emptyResponse) return parseContent(body, config.path)
+
+        val name = config.path.substringAfterLast('/')
+        val parent = config.path.substringBeforeLast('/', "")
+        val listingUrl = contentUrl(config, withRef = true, pathOverride = parent)
+        val listing = transport.execute(HttpRequest("GET", listingUrl, headers(config)))
+        val entries = if (listing.status == 200) {
+            (JsonValue.parseOrNull(listing.bodyText) as? JsonValue.Arr)?.items.orEmpty()
+        } else {
+            emptyList()
+        }
+        val sha = entries
+            .filterIsInstance<JsonValue.Obj>()
+            .firstOrNull { it.str("name") == name || it.str("path") == config.path }
+            ?.str("sha")
+            ?: throw GitException(
+                "The remote file is empty and its revision could not be read. " +
+                    "Open $name once in the repository web UI, then retry.",
+            )
+        return RemoteFile(content = "", revision = sha)
+    }
+
     private fun parseContent(body: String, expectedPath: String): RemoteFile {
         val root = JsonValue.parseOrNull(body) ?: throw GitException("Unexpected response from $kind")
         val entry = when (root) {
@@ -147,14 +207,26 @@ class ContentsApiStore(
             throw GitException("Configured path points to a directory, not a file: $expectedPath")
         }
         val revision = entry.str("sha") ?: throw GitException("Response is missing the blob sha")
-        val encoded = entry.str("content").orEmpty()
-        if (entry.str("encoding") == "none" || encoded.isEmpty()) {
+        val encoded = entry.str("content")
+        // A freshly created 0-byte file is a valid (empty) document, not an error.
+        // `size` must be present and zero; an absent size plus "encoding":"none" means
+        // the contents API refused to inline a large file.
+        if (entry.long("size") == 0L && encoded.isNullOrEmpty()) {
+            return RemoteFile(content = "", revision = revision)
+        }
+        if (entry.str("encoding") == "none" || encoded.isNullOrEmpty()) {
             throw GitException(
                 "File is too large for the contents API (limit 1 MB). Keep " +
                     (entry.str("path") ?: expectedPath) + " smaller.",
             )
         }
         return RemoteFile(content = Base64Codec.decodeToString(encoded), revision = revision)
+    }
+
+    private fun kindFor(status: Int): GitErrorKind = when (status) {
+        404 -> GitErrorKind.NOT_FOUND
+        409, 412, 422 -> GitErrorKind.CONFLICT
+        else -> GitErrorKind.UNKNOWN
     }
 
     private fun authMessage(response: HttpResponse): String =

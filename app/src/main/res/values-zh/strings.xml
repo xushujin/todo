@@ -99,6 +99,15 @@
     <string name="settings_saved">已保存</string>
 
     <string name="sync_title">Git 同步</string>
+    <string name="sync_test_ok_file_missing">连接正常。分支 %2$s 上还没有 %1$s，首次同步会自动创建。</string>
+    <string name="sync_branch_hint">仓库默认分支是 %1$s，当前填的是 %2$s。</string>
+    <string name="sync_use_branch">改用 %1$s</string>
+    <string name="sync_error_auth">无权访问——请检查令牌的仓库读写权限。</string>
+    <string name="sync_error_not_found">仓库、分支或文件路径不存在。</string>
+    <string name="sync_error_conflict">远端内容反复变更，请重试。</string>
+    <string name="sync_error_network">网络错误——请检查网络连接。</string>
+    <string name="sync_error_config">配置不完整。</string>
+    <string name="sync_error_unknown">同步失败。</string>
     <string name="sync_provider">服务商</string>
     <string name="sync_base_url">服务器地址</string>
     <string name="sync_base_url_hint">https://github.com</string>
@@ -116,8 +125,6 @@
     <string name="sync_result_ok">同步完成。拉取 %1$d 条，推送 %2$d 条，冲突 %3$d 条。</string>
     <string name="sync_result_nochange">已是最新。</string>
     <string name="sync_running">同步中…</string>
-    <string name="sync_error">同步失败：%1$s</string>
-    <string name="sync_not_configured">请先配置仓库。</string>
     <string name="sync_conflicts">按最新修改合并的冲突：%1$d 条</string>
     <string name="sync_insecure_warning">远程服务器不允许使用明文 HTTP。</string>
 

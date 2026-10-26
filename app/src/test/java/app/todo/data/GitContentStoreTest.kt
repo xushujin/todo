@@ -12,6 +12,7 @@ import app.todo.data.git.GitProviderKind
 import app.todo.data.git.SyncConfig
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -195,6 +196,108 @@ class GitContentStoreTest {
         val gitlabStore = GitLabContentStore(transport)
         assertNull(runBlocking { githubStore.read(github) })
         assertNull(runBlocking { gitlabStore.read(github.copy(baseUrl = "https://gitlab.com")) })
+    }
+
+    @Test
+    fun emptyFileIsReadAsAnEmptyDocument() {
+        val body = """{"type":"file","path":"data/todos.json","sha":"empty-sha","size":0,"encoding":"base64","content":""}"""
+        val transport = RecordingTransport { HttpResponse(200, body.toByteArray()) }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+
+        val file = runBlocking { store.read(github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com")) }
+
+        assertEquals("", file?.content)
+        assertEquals("empty-sha", file?.revision)
+    }
+
+    @Test
+    fun blankBodyFallsBackToTheDirectoryListingForTheRevision() {
+        val transport = RecordingTransport { request ->
+            if (request.url.contains("/contents/data/todos.json")) {
+                HttpResponse(200, ByteArray(0))
+            } else {
+                HttpResponse(
+                    200,
+                    """[{"name":"todos.json","path":"data/todos.json","sha":"sha-from-listing","size":0,"type":"file"}]""".toByteArray(),
+                )
+            }
+        }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+        val config = github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com")
+
+        val file = runBlocking { store.read(config) }
+
+        assertEquals("", file?.content)
+        assertEquals("sha-from-listing", file?.revision)
+        assertEquals(2, transport.requests.size)
+        assertTrue(transport.requests[1].url.contains("/contents/data?ref=main"))
+    }
+
+    @Test
+    fun emptyArrayResponseFallsBackToTheDirectoryListing() {
+        val transport = RecordingTransport { request ->
+            if (request.url.contains("/contents/data/todos.json")) {
+                HttpResponse(200, "[]".toByteArray())
+            } else {
+                HttpResponse(
+                    200,
+                    """[{"name":"todos.json","path":"data/todos.json","sha":"sha-from-listing","size":0}]""".toByteArray(),
+                )
+            }
+        }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+
+        val file = runBlocking {
+            store.read(github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com"))
+        }
+
+        assertEquals("", file?.content)
+        assertEquals("sha-from-listing", file?.revision)
+    }
+
+    @Test
+    fun blankBodyWithoutAListingEntryFailsWithAnActionableMessage() {
+        val transport = RecordingTransport { HttpResponse(200, ByteArray(0)) }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+        val config = github.copy(provider = GitProviderKind.GITEE, baseUrl = "https://gitee.com")
+
+        val error = assertThrows(app.todo.data.git.GitException::class.java) {
+            runBlocking { store.read(config) }
+        }
+        assertTrue(error.message.orEmpty().contains("revision"))
+    }
+
+    @Test
+    fun defaultBranchComesFromRepoMetadata() {
+        val transport = RecordingTransport { request ->
+            HttpResponse(200, """{"full_name":"hatim/todo","default_branch":"master"}""".toByteArray())
+        }
+        val store = ContentsApiStore(transport, GitProviderKind.GITHUB)
+
+        val branch = runBlocking { store.defaultBranch(github) }
+
+        assertEquals("master", branch)
+        assertEquals("https://api.github.com/repos/hatim/todo", transport.requests.single().url)
+    }
+
+    @Test
+    fun giteeErrorMessagesDoNotLeakTheAccessToken() {
+        val transport = RecordingTransport {
+            HttpResponse(500, """{"message":"boom"}""".toByteArray())
+        }
+        val store = ContentsApiStore(transport, GitProviderKind.GITEE)
+        val config = github.copy(
+            provider = GitProviderKind.GITEE,
+            baseUrl = "https://gitee.com",
+            token = "gitee-secret-abc",
+        )
+
+        val error = assertThrows(app.todo.data.git.GitException::class.java) {
+            runBlocking { store.read(config) }
+        }
+
+        assertFalse(error.message.orEmpty().contains("gitee-secret-abc"))
+        assertTrue(error.message.orEmpty().contains("access_token=***"))
     }
 
     @Test

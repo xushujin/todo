@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.todo.AppGraph
+import app.todo.core.net.HttpException
+import app.todo.data.git.GitErrorKind
 import app.todo.data.git.GitException
 import app.todo.data.prefs.SettingsStore
 import app.todo.domain.model.HomeFilter
@@ -27,7 +29,12 @@ sealed interface SyncOutcome {
     data object Idle : SyncOutcome
     data object Running : SyncOutcome
     data class Success(val pulled: Int, val pushed: Int, val conflicts: Int) : SyncOutcome
-    data class Failure(val message: String) : SyncOutcome
+    data class Failure(val kind: GitErrorKind, val detail: String) : SyncOutcome
+}
+
+sealed interface ConnectionOutcome {
+    data class Ok(val fileExists: Boolean, val defaultBranch: String?) : ConnectionOutcome
+    data class Failed(val kind: GitErrorKind, val detail: String) : ConnectionOutcome
 }
 
 class TodoViewModel(private val graph: AppGraph) : ViewModel() {
@@ -142,7 +149,12 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
 
     fun saveEmailSettings(config: app.todo.data.mail.SmtpConfig) = settings.saveEmailConfig(config)
 
-    fun saveSyncSettings(config: app.todo.data.git.SyncConfig) = settings.saveSyncConfig(config)
+    fun saveSyncSettings(config: app.todo.data.git.SyncConfig) =
+        settings.saveSyncConfig(config.normalized())
+
+    fun clearSyncOutcome() {
+        _syncOutcome.value = SyncOutcome.Idle
+    }
 
     fun sendTestEmail(onResult: (String?) -> Unit) {
         val config = settings.emailConfig.value
@@ -155,25 +167,35 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
         }
     }
 
-    fun testSyncConnection(onResult: (String?) -> Unit) {
-        val config = settings.syncConfig.value
+    fun testSyncConnection(onResult: (ConnectionOutcome) -> Unit) {
+        val config = settings.syncConfig.value?.normalized()
         if (config == null || !config.isConfigured) {
-            onResult("not-configured")
+            onResult(ConnectionOutcome.Failed(GitErrorKind.INVALID_CONFIG, config?.validate().orEmpty()))
             return
         }
+        // A previous sync failure must not stay on screen above the new test result.
+        _syncOutcome.value = SyncOutcome.Idle
         viewModelScope.launch {
+            val result = runCatching { graph.syncEngine(config).testConnection(config) }
             onResult(
-                runCatching { graph.syncEngine(config).testConnection(config) }
-                    .exceptionOrNull()
-                    ?.let { (it as? GitException)?.message ?: it.message },
+                result.fold(
+                    onSuccess = { ConnectionOutcome.Ok(it.fileExists, it.defaultBranch) },
+                    onFailure = { ConnectionOutcome.Failed(kindOf(it), it.message ?: "unknown error") },
+                ),
             )
         }
     }
 
+    private fun kindOf(error: Throwable): GitErrorKind = when (error) {
+        is GitException -> error.kind
+        is HttpException -> GitErrorKind.NETWORK
+        else -> GitErrorKind.UNKNOWN
+    }
+
     fun syncNow() {
-        val config = settings.syncConfig.value
+        val config = settings.syncConfig.value?.normalized()
         if (config == null || !config.isConfigured) {
-            _syncOutcome.value = SyncOutcome.Failure("not-configured")
+            _syncOutcome.value = SyncOutcome.Failure(GitErrorKind.INVALID_CONFIG, config?.validate().orEmpty())
             return
         }
         if (_syncOutcome.value is SyncOutcome.Running) return
@@ -185,6 +207,7 @@ class TodoViewModel(private val graph: AppGraph) : ViewModel() {
                 _syncOutcome.value = SyncOutcome.Success(report.pulled, report.pushed, report.conflicts)
             }.onFailure { error ->
                 _syncOutcome.value = SyncOutcome.Failure(
+                    kindOf(error),
                     (error as? GitException)?.message ?: error.message ?: "unknown error",
                 )
             }

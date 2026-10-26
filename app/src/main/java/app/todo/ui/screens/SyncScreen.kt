@@ -23,8 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.todo.R
 import app.todo.core.time.TimeText
+import app.todo.data.git.GitErrorKind
 import app.todo.data.git.GitProviderKind
 import app.todo.data.git.SyncConfig
+import app.todo.ui.ConnectionOutcome
 import app.todo.ui.SyncOutcome
 import app.todo.ui.TodoViewModel
 import app.todo.ui.components.LabeledValueRow
@@ -34,6 +36,130 @@ import app.todo.ui.components.NeumorphicTextField
 import app.todo.ui.components.ScreenHeader
 import app.todo.ui.components.SectionCard
 import app.todo.ui.theme.LocalTodoPalette
+
+/**
+ * One place for "what just happened": the newest action replaces the previous one, so a
+ * successful connection test can never appear underneath a stale sync error.
+ */
+@Composable
+private fun SyncFeedback(
+    connection: ConnectionOutcome?,
+    formMessage: String?,
+    outcome: SyncOutcome,
+    branch: String,
+    path: String,
+    onUseBranch: (String) -> Unit,
+) {
+    val palette = LocalTodoPalette.current
+
+    if (formMessage != null) {
+        Text(formMessage, color = palette.success, style = MaterialTheme.typography.bodyMedium)
+    }
+
+    when (val state = connection) {
+        null -> Unit
+        is ConnectionOutcome.Ok -> {
+            if (state.fileExists) {
+                Text(
+                    text = stringResource(R.string.sync_test_ok),
+                    color = palette.success,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.sync_test_ok_file_missing, path, branch),
+                    color = palette.warning,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                val defaultBranch = state.defaultBranch
+                if (defaultBranch != null && defaultBranch != branch) {
+                    Text(
+                        text = stringResource(R.string.sync_branch_hint, defaultBranch, branch),
+                        color = palette.warning,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    NeumorphicButton(
+                        onClick = { onUseBranch(defaultBranch) },
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.sync_use_branch, defaultBranch),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = palette.textPrimary,
+                        )
+                    }
+                }
+            }
+        }
+        is ConnectionOutcome.Failed -> {
+            Text(
+                text = errorTitle(state.kind),
+                color = palette.danger,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (state.detail.isNotBlank()) {
+                Text(
+                    text = state.detail.take(240),
+                    color = palette.textSecondary,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+        }
+    }
+
+    when (val state = outcome) {
+        SyncOutcome.Idle -> Unit
+        SyncOutcome.Running -> Text(
+            text = stringResource(R.string.sync_running),
+            color = palette.textSecondary,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        is SyncOutcome.Success -> {
+            Text(
+                text = if (state.pulled == 0 && state.pushed == 0) {
+                    stringResource(R.string.sync_result_nochange)
+                } else {
+                    stringResource(R.string.sync_result_ok, state.pulled, state.pushed, state.conflicts)
+                },
+                color = palette.success,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (state.conflicts > 0) {
+                Text(
+                    text = stringResource(R.string.sync_conflicts, state.conflicts),
+                    color = palette.warning,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+        is SyncOutcome.Failure -> {
+            Text(
+                text = errorTitle(state.kind),
+                color = palette.danger,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (state.detail.isNotBlank()) {
+                Text(
+                    text = state.detail.take(240),
+                    color = palette.textSecondary,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun errorTitle(kind: GitErrorKind): String = stringResource(
+    when (kind) {
+        GitErrorKind.AUTH -> R.string.sync_error_auth
+        GitErrorKind.NOT_FOUND -> R.string.sync_error_not_found
+        GitErrorKind.CONFLICT -> R.string.sync_error_conflict
+        GitErrorKind.NETWORK -> R.string.sync_error_network
+        GitErrorKind.INVALID_CONFIG -> R.string.sync_error_config
+        GitErrorKind.UNKNOWN -> R.string.sync_error_unknown
+    },
+)
 
 @Composable
 fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
@@ -49,11 +175,10 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
     var branch by remember(saved) { mutableStateOf(saved?.branch ?: "main") }
     var path by remember(saved) { mutableStateOf(saved?.path ?: "data/todos.json") }
     var token by remember(saved) { mutableStateOf(saved?.token.orEmpty()) }
-    var status by remember { mutableStateOf<String?>(null) }
+    var formMessage by remember { mutableStateOf<String?>(null) }
+    var connection by remember { mutableStateOf<ConnectionOutcome?>(null) }
 
     val savedLabel = stringResource(R.string.settings_saved)
-    val testOk = stringResource(R.string.sync_test_ok)
-    val notConfigured = stringResource(R.string.sync_not_configured)
     val insecure = stringResource(R.string.sync_insecure_warning)
 
     Column(Modifier.fillMaxSize()) {
@@ -99,25 +224,30 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
                 )
             }
 
+            // Accepts a pasted clone URL / "owner/repo" and turns it into the two
+            // fields the API needs, instead of sending a URL-encoded path to the server.
             val config = SyncConfig(
                 provider = provider,
-                baseUrl = baseUrl.trim(),
-                owner = owner.trim(),
-                repo = repo.trim(),
-                branch = branch.trim(),
-                path = path.trim(),
-                token = token.trim(),
-            )
+                baseUrl = baseUrl,
+                owner = owner,
+                repo = repo,
+                branch = branch,
+                path = path,
+                token = token,
+            ).normalized()
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 NeumorphicButton(
                     onClick = {
                         val problem = config.validate()
-                        status = if (problem == null) {
+                        if (problem == null) {
                             vm.saveSyncSettings(config)
-                            savedLabel
+                            connection = null
+                            vm.clearSyncOutcome()
+                            formMessage = savedLabel
                         } else {
-                            problem
+                            formMessage = null
+                            connection = ConnectionOutcome.Failed(GitErrorKind.INVALID_CONFIG, problem)
                         }
                     },
                     accent = true,
@@ -133,13 +263,13 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
                     onClick = {
                         val problem = config.validate()
                         if (problem != null) {
-                            status = problem
+                            formMessage = null
+                            connection = ConnectionOutcome.Failed(GitErrorKind.INVALID_CONFIG, problem)
                         } else {
                             vm.saveSyncSettings(config)
-                            status = null
-                            vm.testSyncConnection { error ->
-                                status = error ?: testOk
-                            }
+                            formMessage = null
+                            connection = null
+                            vm.testSyncConnection { connection = it }
                         }
                     },
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
@@ -154,14 +284,22 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
 
             NeumorphicButton(
                 onClick = {
-                    if (config.validate() != null) {
-                        status = notConfigured
-                    } else if (!config.baseUrl.startsWith("https://")) {
-                        status = insecure
-                    } else {
-                        vm.saveSyncSettings(config)
-                        status = null
-                        vm.syncNow()
+                    val problem = config.validate()
+                    when {
+                        problem != null -> {
+                            formMessage = null
+                            connection = ConnectionOutcome.Failed(GitErrorKind.INVALID_CONFIG, problem)
+                        }
+                        !config.baseUrl.startsWith("https://") -> {
+                            formMessage = null
+                            connection = ConnectionOutcome.Failed(GitErrorKind.INVALID_CONFIG, insecure)
+                        }
+                        else -> {
+                            vm.saveSyncSettings(config)
+                            formMessage = null
+                            connection = null
+                            vm.syncNow()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -176,6 +314,19 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
             }
 
             SectionCard {
+                SyncFeedback(
+                    connection = connection,
+                    formMessage = formMessage,
+                    outcome = outcome,
+                    branch = branch,
+                    path = path,
+                    onUseBranch = { newBranch ->
+                        branch = newBranch
+                        vm.saveSyncSettings(config.copy(branch = newBranch))
+                        connection = null
+                        vm.testSyncConnection { connection = it }
+                    },
+                )
                 LabeledValueRow(
                     label = stringResource(R.string.sync_last),
                     value = if (lastSyncAt <= 0L) {
@@ -184,48 +335,6 @@ fun SyncScreen(vm: TodoViewModel, onBack: () -> Unit) {
                         TimeText.formatDateTime(lastSyncAt)
                     },
                 )
-                when (val state = outcome) {
-                    SyncOutcome.Idle -> Unit
-                    SyncOutcome.Running -> Text(
-                        text = stringResource(R.string.sync_running),
-                        color = palette.textSecondary,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    is SyncOutcome.Success -> {
-                        Text(
-                            text = if (state.pulled == 0 && state.pushed == 0) {
-                                stringResource(R.string.sync_result_nochange)
-                            } else {
-                                stringResource(R.string.sync_result_ok, state.pulled, state.pushed, state.conflicts)
-                            },
-                            color = palette.success,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        if (state.conflicts > 0) {
-                            Text(
-                                text = stringResource(R.string.sync_conflicts, state.conflicts),
-                                color = palette.warning,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
-                    }
-                    is SyncOutcome.Failure -> Text(
-                        text = if (state.message == "not-configured") {
-                            notConfigured
-                        } else {
-                            stringResource(R.string.sync_error, state.message)
-                        },
-                        color = palette.danger,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-                if (status != null) {
-                    Text(
-                        text = status.orEmpty(),
-                        color = palette.textSecondary,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
             }
         }
     }

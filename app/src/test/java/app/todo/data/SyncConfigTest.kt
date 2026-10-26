@@ -2,6 +2,7 @@ package app.todo.data
 
 import app.todo.data.git.GitProviderKind
 import app.todo.data.git.SyncConfig
+import app.todo.data.git.redactSecrets
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -57,6 +58,48 @@ class SyncConfigTest {
         assertEquals(GitProviderKind.GITHUB, GitProviderKind.fromName("github"))
         assertEquals(GitProviderKind.GITLAB, GitProviderKind.fromName("GITLAB"))
         assertEquals(GitProviderKind.GITHUB, GitProviderKind.fromName("unknown"))
+    }
+
+    @Test
+    fun normalizesACloneUrlPastedIntoTheRepoField() {
+        val messy = valid.copy(
+            owner = "xushujin/todo-data",
+            repo = "https://gitee.com/xushujin/todo-data.git",
+        )
+
+        val fixed = messy.normalized()
+
+        assertEquals("xushujin", fixed.owner)
+        assertEquals("todo-data", fixed.repo)
+        assertNull(fixed.validate())
+    }
+
+    @Test
+    fun normalizesOwnerSlashRepoAndStripsGitSuffix() {
+        val fromPath = valid.copy(owner = "", repo = "xushujin/todo-data").normalized()
+        assertEquals("xushujin", fromPath.owner)
+        assertEquals("todo-data", fromPath.repo)
+
+        val withSuffix = valid.copy(owner = "xushujin", repo = "todo-data.git").normalized()
+        assertEquals("xushujin", withSuffix.owner)
+        assertEquals("todo-data", withSuffix.repo)
+    }
+
+    @Test
+    fun normalizationKeepsGroupNamespaces() {
+        val group = valid.copy(owner = "group/sub", repo = "todo").normalized()
+        assertEquals("group/sub", group.owner)
+        assertEquals("todo", group.repo)
+    }
+
+    @Test
+    fun redactsAccessTokensFromErrorText() {
+        val message = "POST https://gitee.com/api/v5/repos/a/b/contents/x.json?access_token=secret123 failed: 404"
+
+        val redacted = redactSecrets(message)
+
+        assertFalse(redacted.contains("secret123"))
+        assertTrue(redacted.contains("access_token=***"))
     }
 
     @Test

@@ -17,7 +17,7 @@
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 全量构建 | `./gradlew clean assembleDebug assembleRelease testDebugUnitTest lintDebug` | **BUILD SUCCESSFUL**，输出中 `w:` / `e:` / `warning` 行数为 **0** |
-| 单元测试 | 同上 | **92 个用例 / 13 个测试类，0 失败 0 跳过** |
+| 单元测试 | 同上 | **107 个用例 / 13 个测试类，0 失败 0 跳过** |
 | Android Lint | `./gradlew lintDebug` | **0 issue**（`app/build/reports/lint-results-debug.xml` 为空） |
 | 迁移校验 | `python3 tools/verify_schema.py` | **passed**（2 个迁移文件、列与索引一致、无破坏性语句） |
 | Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **21 项检查全部通过**（含 Gitee 分支） |
@@ -51,7 +51,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | Web 页面 | Node VM 执行页面真实脚本 + 真实 `fetch` 打 `tools/web_mock_server.py` | 空仓库首写、schema 字段、重新加载、过期令牌触发合并重试、完成/删除写墓碑；Gitee：`POST` 新建、数组响应解析、`PUT` 更新 |
 | Gitee 接口契约 | 对照官方 OpenAPI 描述 `https://gitee.com/api/v5/swagger_doc.json` | 路径 `/api/v5/repos/{owner}/{repo}/contents/{path}`、`access_token` 查询参数、创建 `POST` / 更新 `PUT` 且 `sha` 必填、返回 `content.sha` |
 
-## 4. 单元测试清单（92 用例）
+## 4. 单元测试清单（107 用例）
 
 | 测试类 | 覆盖 |
 | --- | --- |
@@ -60,14 +60,14 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | `SyncDocumentTest` | 文档往返、Web 文档解码、未来 schema 拒绝、非法结构、缺省字段、编码稳定性 |
 | `TodoQueryTest` | 过滤（今天/紧急/清单/已完成）、排序（置顶优先、无截止时间靠后）、时间工具 |
 | `SchemaTest` | 版本链连续、升级只跑增量、无破坏性语句、迁移文件可读 |
-| `SyncConfigTest` | https 强制、必填项、路径穿越拒绝、provider 默认值 |
+| `SyncConfigTest` | https 强制、必填项、路径穿越拒绝、provider 默认值、克隆地址/`owner/repo` 归一化、token 脱敏 |
 | `MimeMessageBuilderTest` | 主题编码、头注入、base64 折行、日期格式 |
 | `SmtpClientTest` | 真实 SMTP 会话、无认证路径、认证失败、配置校验 |
 | `HttpTransportTest` | 真实 socket HTTP、方法/请求体、404、拒绝明文 HTTP |
-| `GitContentStoreTest` | GitHub/Gitee/Gitea/GitLab 的 URL、鉴权方式、base64 载荷、`sha`/`last_commit_id`、409/400 冲突、404、1 MB 限制、Gitee 数组响应 |
+| `GitContentStoreTest` | GitHub/Gitee/Gitea/GitLab 的 URL、鉴权方式、base64 载荷、`sha`/`last_commit_id`、409/400 冲突、404、1 MB 限制、Gitee 数组响应、0 字节空文件、默认分支查询、错误消息脱敏 |
 | `StringResourceConsistencyTest` | 两套语言键一致、占位符一致、带格式符的字符串调用时必须传参（防 `%1$s` 直接显示到界面） |
 | `LockPolicyTest` | 锁定时限：立即、宽限期内不锁、到点锁、无基线时锁 |
-| `SyncEngineTest` | 首次推送、纯拉取、无变化不写、冲突后重读重试、超过重试上限、非法 schema、非法配置 |
+| `SyncEngineTest` | 首次推送、纯拉取、无变化不写、冲突后重读重试、超过重试上限、非法 schema、非法配置、空文件当空文档、分支不存在时用默认分支解释 404 |
 
 ## 5. 明确**没有**验证的部分
 
@@ -122,5 +122,12 @@ git tag v1.0.0 && git push origin v1.0.0
 | 设备无生物识别时开启应用锁会把用户锁死 | 仅在 `availability() == AVAILABLE` 时锁定，设置页开关同步禁用 |
 | `mipmap-anydpi` 不被 AAPT2 接受 | 保留 `mipmap-anydpi-v26`，用 `app/lint.xml` 忽略 `ObsoleteSdkInt` |
 | Lint 43 条告警 | 全部处理：删除未用字符串、KTX 替换、API 常量内联、参数顺序、locale 不静态缓存等，最终 0 issue |
+| Gitee 的 0 字节文件返回 200 空响应体/`[]`，报"Unexpected response" | 空响应视为空文档，改用父目录列表取 `sha` 后再写；新增 3 个单测（空 body、空数组、端到端 PUT 带 sha） |
+| 仓库字段填克隆地址导致 404 | `SyncConfig.normalized()` 解析 URL / `owner/repo` / 去掉 `.git`，校验拒绝把 URL 当仓库名 |
+| 0 字节的 `todos.json` 被报"文件过大" | `size == 0` 视为空文档；`size` 缺失且 `encoding:"none"` 才按过大处理 |
+| 错误提示里带 `access_token` | 所有错误消息经 `redactSecrets` 打码（截图/日志不再泄露令牌） |
+| 分支填错只给一个 404 | 文件缺失时查询仓库默认分支，提示"默认分支是 master"并可一键切换 |
+| 测试成功提示排在旧错误下面 | 反馈区只保留最近一次操作，测试连接前清空旧的同步结果；错误按类型显示一句人话 + 小字详情 |
+| strings.xml 撇号未转义导致 AAPT 构建失败 | 转义 `'` 并加入 `StringResourceConsistencyTest.apostrophesAreEscaped` |
 | 同步页「上次同步」后面显示 `%1$s` | `sync_last` 字符串带占位符却未传参；改为纯标签 + 独立时间值，并新增 `StringResourceConsistencyTest` 双向扫描（已用"故意改回 bug"验证该测试确实会失败） |
 | 每次切应用都要求指纹、且未保存的编辑页丢失 | 增加「锁定时限」（默认 1 分钟）与 `LockPolicy`；应用内容包进 `SaveableStateHolder`，编辑页改用 `rememberSaveable` 并加初始化守卫，解锁后回到原页面、草稿保留 |

@@ -30,7 +30,11 @@ class GitLabContentStore(private val transport: HttpTransport) : GitContentStore
             }
             404 -> null
             401, 403 -> throw GitAuthException("Access denied (${response.status}). Check the token scope.")
-            else -> throw GitException("GET $url failed: ${describe(response)}", response.status)
+            else -> throw GitException(
+                "GET ${redactSecrets(url)} failed: ${describe(response)}",
+                response.status,
+                if (response.status == 404) GitErrorKind.NOT_FOUND else GitErrorKind.UNKNOWN,
+            )
         }
     }
 
@@ -70,8 +74,19 @@ class GitLabContentStore(private val transport: HttpTransport) : GitContentStore
             }
             400 -> throw GitConflictException("Remote changed meanwhile: ${describe(response)}")
             401, 403 -> throw GitAuthException("Access denied (${response.status}). Check the token scope.")
-            else -> throw GitException("$method $url failed: ${describe(response)}", response.status)
+            else -> throw GitException(
+                "$method ${redactSecrets(url)} failed: ${describe(response)}",
+                response.status,
+                if (response.status == 404) GitErrorKind.NOT_FOUND else GitErrorKind.UNKNOWN,
+            )
         }
+    }
+
+    override suspend fun defaultBranch(config: SyncConfig): String? {
+        val url = "${apiRoot(config)}/projects/${projectId(config)}"
+        val response = transport.execute(HttpRequest("GET", url, headers(config)))
+        if (response.status != 200) return null
+        return JsonValue.parseOrNull(response.bodyText)?.str("default_branch")
     }
 
     private fun apiRoot(config: SyncConfig): String = config.baseUrl.trimEnd('/') + "/api/v4"
