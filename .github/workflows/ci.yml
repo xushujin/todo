@@ -30,6 +30,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Default packages include the legacy 'tools' package, which no longer
+          # exists in the SDK repo and makes sdkmanager exit 1. Install only what
+          # we need; AGP auto-downloads the rest (compileSdk platform, etc.).
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
 
       - name: Cache Gradle
         uses: actions/cache@v4
