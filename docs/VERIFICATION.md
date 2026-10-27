@@ -22,7 +22,7 @@
 | 迁移校验 | `python3 tools/verify_schema.py` | **passed**（2 个迁移文件、列与索引一致、无破坏性语句） |
 | Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **21 项检查全部通过**（含 Gitee 分支） |
 | Debug APK | `assembleDebug` | 29 MB，`app/build/outputs/apk/debug/app-debug.apk` |
-| Release APK | `renameReleaseApk`（本地 keystore 通道） | 约 3.2 MB，`Todo-<version>-release.apk`，`apksigner verify` 通过，`zipalign -c 4` 通过 |
+| Release APK | `renameReleaseApk`（本地 keystore 通道） | 约 3.2 MB，`Todo-<version>.apk`，`apksigner verify` 通过，`zipalign -c 4` 通过 |
 | GitHub 发布流水线 | 推送 tag `v1.0.0` | **success**；Release「Todo v1.0.0」发布 `Todo-1.0.0-release.apk`（3,167,690 B）+ `.sha256` |
 
 Release 签名证书（本机持久密钥，位于仓库之外 `~/keys/todo-release.jks`，口令在 git-ignored 的
@@ -144,5 +144,5 @@ adb shell dumpsys alarm | grep -A3 app.todo
 | 按钮按下几乎没有反馈 | `NeumorphicSurface` 增加 0.965 缩放 + 强调色淡染，按钮加轻触觉反馈；`SwitchRow` / `LabeledValueRow` 增加按压底色 |
 | 发布流水线首次运行失败（`Failed to find package 'tools'`） | `setup-android` 默认安装的 `tools` 包已下架；改为显式安装 `platform-tools` / `platforms;android-36` / `build-tools;35.0.0` |
 | versionCode 用 `run_number`，新仓库首跑可能小于已装 dev 包 | 改按语义版本推导：`MAJOR*10000 + MINOR*100 + PATCH`（v1.0.1 → 10001） |
-| Release 资产名是 `app-release.apk` | 新增 `renameReleaseApk` 任务，产物 `Todo-<version>-release.apk`；AGP 8.13 已移除 `outputFileName` API，只能在构建后重命名 |
+| Release 资产名是 `app-release.apk` | 新增 `renameReleaseApk` 任务；1.0.2 起产物为 `Todo-<version>.apk`（最初带 `-release` 后缀，用户反馈多余后去掉）；AGP 8.13 已移除 `outputFileName` API，只能在构建后重命名 |
 | Actions 页被 Dependabot 运行刷屏 | `dependabot.yml` 改为 `updates: []`；删除 `ci.yml`，推 main 不再触发任何工作流 |

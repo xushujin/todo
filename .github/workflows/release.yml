@@ -109,7 +109,7 @@ jobs:
         run: |
           APK=$(find app/build/outputs/apk/release -name 'Todo-*.apk' | head -n 1)
           if [ -z "$APK" ]; then
-            echo "::error::Expected Todo-<version>-release.apk, but the output directory holds:"
+            echo "::error::Expected Todo-<version>.apk, but the output directory holds:"
             ls -la app/build/outputs/apk/release || true
             exit 1
           fi
@@ -121,7 +121,7 @@ jobs:
       - name: Checksums
         run: |
           # Write the checksum file next to the APK with a bare file name so it can be
-          # verified from any directory: sha256sum -c Todo-<version>-release.apk.sha256
+          # verified from any directory: sha256sum -c Todo-<version>.apk.sha256
           cd "$(dirname "$APK")"
           sha256sum "$(basename "$APK")" > "$(basename "$APK").sha256"
           cat "$(basename "$APK").sha256"

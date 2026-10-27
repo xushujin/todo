@@ -2,15 +2,18 @@ package app.todo.ui.screens
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -18,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,8 +56,11 @@ import app.todo.ui.components.NeumorphicTextField
 import app.todo.ui.components.ScreenHeader
 import app.todo.ui.components.SectionCard
 import app.todo.ui.components.SwitchRow
+import app.todo.ui.components.TodoIcon
+import app.todo.ui.components.TodoIconKind
 import app.todo.ui.theme.LocalTodoPalette
 import app.todo.ui.theme.Palettes
+import kotlinx.coroutines.delay
 
 @Composable
 fun SettingsScreen(
@@ -275,6 +282,17 @@ private fun EmailSettingsSection(
     var to by remember(initial) { mutableStateOf(initial?.to.orEmpty()) }
     var result by remember { mutableStateOf<MailTestResult?>(null) }
     var testing by remember { mutableStateOf(false) }
+    var justSaved by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Flip the button label to "Saved" for a moment. A silent onSave() left the user
+    // wondering whether the tap registered at all.
+    LaunchedEffect(justSaved) {
+        if (justSaved) {
+            delay(1_500)
+            justSaved = false
+        }
+    }
 
     val incomplete = stringResource(R.string.settings_email_incomplete)
     val sent = stringResource(R.string.settings_email_sent)
@@ -326,12 +344,25 @@ private fun EmailSettingsSection(
             onClick = {
                 onSave(config)
                 result = null
+                justSaved = true
+                Toast.makeText(context, R.string.settings_email_saved, Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.fillMaxWidth(),
             accent = true,
         ) {
+            if (justSaved) {
+                TodoIcon(
+                    kind = TodoIconKind.CHECK,
+                    size = 16.dp,
+                    tint = palette.onAccent,
+                    strokeWidth = 2.dp,
+                )
+                Spacer(Modifier.width(8.dp))
+            }
             Text(
-                text = stringResource(R.string.settings_email_save),
+                text = stringResource(
+                    if (justSaved) R.string.settings_email_saved else R.string.settings_email_save,
+                ),
                 color = palette.onAccent,
                 style = MaterialTheme.typography.labelLarge,
             )

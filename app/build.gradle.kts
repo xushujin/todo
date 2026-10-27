@@ -73,7 +73,7 @@ val versionNameOverride: String? = providers.gradleProperty("versionName").orNul
 val versionCodeOverride: Int? = providers.gradleProperty("versionCode").orNull?.toIntOrNull()
 
 // Single source of truth for the shipped version name; also used to name the APK.
-val defaultVersionName: String = versionNameOverride ?: "1.0.1"
+val defaultVersionName: String = versionNameOverride ?: "1.0.2"
 
 /** 1.2.3 -> 10203, the same scheme the release workflow derives from a tag. */
 fun semverToVersionCode(version: String): Int {
@@ -160,7 +160,7 @@ android {
 }
 
 /**
- * Renames the assembled release artifact to `Todo-<version>-release.apk`.
+ * Renames the assembled release artifact to `Todo-<version>.apk`.
  *
  * AGP 8.13 exposes no API to set the output file name any more: the new
  * `androidComponents` API has no `VariantOutput.outputFileName`, and the legacy
@@ -169,12 +169,12 @@ android {
  */
 val renameReleaseApk = tasks.register("renameReleaseApk") {
     group = "build"
-    description = "Rename the release APK to Todo-<version>-release.apk"
+    description = "Rename the release APK to Todo-<version>.apk"
     dependsOn("assembleRelease")
     doLast {
         val dir = layout.buildDirectory.dir("outputs/apk/release").get().asFile
         val source = File(dir, "app-release.apk")
-        val target = File(dir, "Todo-$defaultVersionName-release.apk")
+        val target = File(dir, "Todo-$defaultVersionName.apk")
         if (!source.exists()) {
             logger.lifecycle("Release APK already renamed: ${target.name}")
             return@doLast

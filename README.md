@@ -4,7 +4,7 @@
 时钟闹钟 + 邮件双通道提醒，生物识别应用锁，以及通过**自建 Git 仓库**完成的双向同步。
 仓库里还带一个纯静态 Web 页面，读取同一个 `data/todos.json` 做展示与操作。
 
-> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.1` · 支持 Android 11（API 30）– Android 16（API 36）
+> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.2` · 支持 Android 11（API 30）– Android 16（API 36）
 
 ---
 
@@ -174,7 +174,7 @@ git push origin v1.0.1                    # 仅这一动作触发 release.yml
 2. 从 `secrets.TODO_KEYSTORE_BASE64` 解出 keystore（缺失直接失败，避免发出未签名包）；
 3. 按 tag 推导版本：`v1.2.3` → `versionName=1.2.3`、`versionCode=10203`
    （`MAJOR*10000 + MINOR*100 + PATCH`，单调递增且与仓库历史/run_number 无关）；
-4. `./gradlew renameReleaseApk` 构建签名包，产物命名为 `Todo-<version>-release.apk`；
+4. `./gradlew renameReleaseApk` 构建签名包，产物命名为 `Todo-<version>.apk`；
 5. `apksigner verify --print-certs` + `zipalign -c`；
 6. 生成 SHA-256，用 `softprops/action-gh-release` 创建 Release 并附上 APK 与校验文件。
 
@@ -183,9 +183,9 @@ git push origin v1.0.1                    # 仅这一动作触发 release.yml
 本地等价发版：
 
 ```bash
-./gradlew renameReleaseApk -PversionName=1.0.1 -PversionCode=10001
-apksigner verify --print-certs app/build/outputs/apk/release/Todo-1.0.1-release.apk
-cp app/build/outputs/apk/release/Todo-1.0.1-release.apk dist/
+./gradlew renameReleaseApk -PversionName=1.0.2 -PversionCode=10002
+apksigner verify --print-certs app/build/outputs/apk/release/Todo-1.0.2.apk
+cp app/build/outputs/apk/release/Todo-1.0.2.apk dist/
 ```
 
 ---
@@ -291,7 +291,7 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 python3 tools/verify_schema.py     # 真实 SQLite 执行迁移
 node tools/web_smoke_test.mjs      # Web 页面逻辑（需先起 mock server）
 ./gradlew lintDebug                # Android Lint，当前 0 issue
-./gradlew assembleDebug renameReleaseApk   # 产物 Todo-<version>-release.apk
+./gradlew assembleDebug renameReleaseApk   # 产物 Todo-<version>.apk
 ```
 
 已验证 / 未验证的边界写在 [`docs/VERIFICATION.md`](docs/VERIFICATION.md)，包括"没有在真机或模拟器上跑过 UI"

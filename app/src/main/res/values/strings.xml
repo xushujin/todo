@@ -16,6 +16,7 @@
     <string name="home_filter_all">All</string>
     <string name="home_filter_today">Today</string>
     <string name="home_filter_urgent">Urgent</string>
+    <string name="home_filter_all_lists">All lists</string>
     <string name="home_sort">Sort</string>
     <string name="home_sort_due">Due date</string>
     <string name="home_sort_priority">Urgency</string>
@@ -105,6 +106,7 @@
     <string name="settings_email_from">From</string>
     <string name="settings_email_to">To</string>
     <string name="settings_email_save">Save email settings</string>
+    <string name="settings_email_saved">Saved</string>
     <string name="settings_email_send_test">Send test email</string>
     <string name="settings_email_incomplete">Fill in host, username, password and recipient first.</string>
     <string name="settings_data">Data</string>

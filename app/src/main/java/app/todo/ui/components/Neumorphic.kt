@@ -57,6 +57,7 @@ fun NeumorphicSurface(
     elevation: Dp = 6.dp,
     pressed: Boolean = false,
     color: Color = LocalTodoPalette.current.surface,
+    pressedTint: Color = LocalTodoPalette.current.accent,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     contentAlignment: Alignment = Alignment.TopStart,
     content: @Composable BoxScope.() -> Unit,
@@ -77,7 +78,8 @@ fun NeumorphicSurface(
     )
     val pressTint by animateColorAsState(
         targetValue = if (pressed) {
-            palette.accent.copy(alpha = if (palette.isDark) 0.18f else 0.10f)
+            // An accent surface needs a light wash; accent-on-accent is invisible.
+            pressedTint.copy(alpha = if (palette.isDark) 0.20f else 0.14f)
         } else {
             Color.Transparent
         },
@@ -149,6 +151,7 @@ fun NeumorphicButton(
         shape = RoundedCornerShape(16.dp),
         elevation = if (accent) 8.dp else 5.dp,
         pressed = pressed,
+        pressedTint = if (accent) palette.onAccent else palette.accent,
         color = when {
             !enabled -> palette.surfaceSunken
             accent -> palette.accent
@@ -199,6 +202,7 @@ fun NeumorphicIconButton(
         shape = CircleShape,
         elevation = if (accent) 9.dp else 5.dp,
         pressed = pressed,
+        pressedTint = if (accent) palette.onAccent else palette.accent,
         color = if (accent) palette.accent else palette.surface,
         contentAlignment = Alignment.Center,
     ) {
@@ -232,6 +236,7 @@ fun NeumorphicChip(
         shape = CircleShape,
         elevation = if (selected) 6.dp else 3.dp,
         pressed = pressed,
+        pressedTint = if (selected) palette.onAccent else palette.accent,
         color = if (selected) palette.accent else palette.surface,
         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
     ) {

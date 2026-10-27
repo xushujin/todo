@@ -70,7 +70,6 @@ fun HomeScreen(
     val lists by vm.lists.collectAsStateWithLifecycle()
     val filter by vm.filter.collectAsStateWithLifecycle()
     val sort by vm.settings.sort.collectAsStateWithLifecycle()
-    val showDone by vm.settings.showDone.collectAsStateWithLifecycle()
     val autoSync by vm.autoSyncState.collectAsStateWithLifecycle()
     val listsById = remember(lists) { lists.associateBy { it.id } }
 
@@ -111,11 +110,9 @@ fun HomeScreen(
                 selectedListId = filter.listId,
                 lists = lists,
                 sort = sort,
-                showDone = showDone,
                 onMode = vm::setMode,
                 onList = vm::setListFilter,
                 onSort = vm::setSort,
-                onShowDone = vm::setShowDone,
             )
 
             if (visible.isEmpty()) {
@@ -164,85 +161,103 @@ private fun FilterRow(
     selectedListId: String?,
     lists: List<TodoList>,
     sort: TodoSort,
-    showDone: Boolean,
     onMode: (HomeMode) -> Unit,
     onList: (String?) -> Unit,
     onSort: (TodoSort) -> Unit,
-    onShowDone: (Boolean) -> Unit,
 ) {
     val palette = LocalTodoPalette.current
     val sortText = sortLabel(sort)
+    val selectedList = lists.firstOrNull { it.id == selectedListId }
     var sortExpanded by remember { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            item {
-                NeumorphicChip(
-                    label = stringResource(R.string.home_filter_all),
-                    selected = filterMode == HomeMode.ALL,
-                    onClick = { onMode(HomeMode.ALL) },
-                )
-            }
-            item {
-                NeumorphicChip(
-                    label = stringResource(R.string.home_filter_today),
-                    selected = filterMode == HomeMode.TODAY,
-                    onClick = { onMode(HomeMode.TODAY) },
-                )
-            }
-            item {
-                NeumorphicChip(
-                    label = stringResource(R.string.home_filter_urgent),
-                    selected = filterMode == HomeMode.URGENT,
-                    onClick = { onMode(HomeMode.URGENT) },
-                )
-            }
-            items(lists, key = { it.id }) { list ->
-                NeumorphicChip(
-                    label = list.name,
-                    selected = selectedListId == list.id,
-                    onClick = { onList(if (selectedListId == list.id) null else list.id) },
-                    dotColor = Color(list.colorArgb),
-                )
-            }
+    var listExpanded by remember { mutableStateOf(false) }
+
+    // A single scrolling row. Lists collapse into one dropdown, so the header stays
+    // the same height whether the user has one list or twenty.
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        item {
+            NeumorphicChip(
+                label = stringResource(R.string.home_filter_all),
+                selected = filterMode == HomeMode.ALL,
+                onClick = { onMode(HomeMode.ALL) },
+            )
         }
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            item {
-                Box {
-                    NeumorphicChip(
-                        label = "${stringResource(R.string.home_sort)} · $sortText",
-                        selected = false,
-                        onClick = { sortExpanded = true },
-                    )
-                    DropdownMenu(
-                        expanded = sortExpanded,
-                        onDismissRequest = { sortExpanded = false },
-                        containerColor = palette.surface,
-                    ) {
-                        TodoSort.entries.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(sortLabel(option), color = palette.textPrimary) },
-                                onClick = {
-                                    sortExpanded = false
-                                    onSort(option)
-                                },
+        item {
+            NeumorphicChip(
+                label = stringResource(R.string.home_filter_today),
+                selected = filterMode == HomeMode.TODAY,
+                onClick = { onMode(HomeMode.TODAY) },
+            )
+        }
+        item {
+            NeumorphicChip(
+                label = stringResource(R.string.home_filter_urgent),
+                selected = filterMode == HomeMode.URGENT,
+                onClick = { onMode(HomeMode.URGENT) },
+            )
+        }
+        item {
+            Box {
+                NeumorphicChip(
+                    label = selectedList?.name ?: stringResource(R.string.nav_lists),
+                    selected = selectedList != null,
+                    onClick = { listExpanded = true },
+                    dotColor = selectedList?.let { Color(it.colorArgb) },
+                )
+                DropdownMenu(
+                    expanded = listExpanded,
+                    onDismissRequest = { listExpanded = false },
+                    containerColor = palette.surface,
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = stringResource(R.string.home_filter_all_lists),
+                                color = palette.textPrimary,
                             )
-                        }
+                        },
+                        onClick = {
+                            listExpanded = false
+                            onList(null)
+                        },
+                    )
+                    lists.forEach { list ->
+                        DropdownMenuItem(
+                            text = { Text(list.name, color = palette.textPrimary) },
+                            onClick = {
+                                listExpanded = false
+                                onList(list.id)
+                            },
+                        )
                     }
                 }
             }
-            item {
+        }
+        item {
+            Box {
                 NeumorphicChip(
-                    label = stringResource(R.string.home_show_done),
-                    selected = showDone,
-                    onClick = { onShowDone(!showDone) },
+                    label = "${stringResource(R.string.home_sort)} · $sortText",
+                    selected = false,
+                    onClick = { sortExpanded = true },
                 )
+                DropdownMenu(
+                    expanded = sortExpanded,
+                    onDismissRequest = { sortExpanded = false },
+                    containerColor = palette.surface,
+                ) {
+                    TodoSort.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(sortLabel(option), color = palette.textPrimary) },
+                            onClick = {
+                                sortExpanded = false
+                                onSort(option)
+                            },
+                        )
+                    }
+                }
             }
         }
     }
