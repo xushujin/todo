@@ -4,7 +4,7 @@
 时钟闹钟 + 邮件双通道提醒，生物识别应用锁，以及通过**自建 Git 仓库**完成的双向同步。
 仓库里还带一个纯静态 Web 页面，读取同一个 `data/todos.json` 做展示与操作。
 
-> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.0` · 支持 Android 11（API 30）– Android 16（API 36）
+> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.1` · 支持 Android 11（API 30）– Android 16（API 36）
 
 ---
 
@@ -26,7 +26,7 @@
 | 双通道签名 | `app/build.gradle.kts` 中 `ReleaseSigning`（`keystore.properties` 或 CI 环境变量） |
 | 打 tag 触发 CI 构建并发布 Release | `.github/workflows/release.yml` |
 | 零编译警告 | `allWarningsAsErrors = true` + `-Xlint:all -Werror`，实际构建无警告输出 |
-| 核心逻辑单测 | `app/src/test/` 共 13 个测试类，覆盖 JSON/Base64/合并/协议/HTTP/SMTP/迁移/查询 |
+| 核心逻辑单测 | `app/src/test/` 共 13 个文件、14 个测试类、113 个用例，覆盖 JSON/Base64/合并/协议/HTTP/SMTP/迁移/查询 |
 | 二进制/格式类解析用真实文件验证 | 测试用真实结构的 GitHub/GitLab 响应样本；SMTP 走真实 socket；HTTP 走真实本地服务器；schema 用真实 SQLite 执行 |
 
 ---
@@ -53,7 +53,7 @@ junit:junit                            4.13.2   仅测试
 | JSON 解析/序列化 | `core/json/JsonValue.kt` | 手写递归下降解析器 + 写出器，数字保留原始字面量避免 epoch 毫秒精度丢失 |
 | Base64 | `core/codec/Base64Codec.kt` | RFC 4648，忽略换行（GitHub 每 60 字符换行），JVM 可测 |
 | HTTP 传输 | `core/net/UrlConnectionTransport.kt` | `HttpURLConnection`，禁止跟随重定向、强制 https |
-| Git 内容读写 | `data/git/*ContentStore.kt` | 三家平台的 URL/鉴权/版本令牌差异全部手写 |
+| Git 内容读写 | `data/git/*ContentStore.kt` | 四家平台的 URL/鉴权/版本令牌差异全部手写 |
 | 双向合并 | `domain/sync/SnapshotMerge.kt` | LWW + 墓碑 + deviceId 决胜，可交换、幂等 |
 | SQLite 存储 | `data/db/TodoDao.kt` | 手写 SQL 与游标映射，无注解处理器 |
 | 迁移 | `data/db/TodoDb.kt` + `resources/schema/*.sql` | 版本即文件，升级只跑增量，禁止破坏性迁移 |
@@ -78,8 +78,9 @@ junit:junit                            4.13.2   仅测试
 
 **为什么不是 AGP 9 / compileSdk 37**：2026 年最新的 AndroidX（Compose 1.12、core 1.19、lifecycle 2.11）
 的 AAR 元数据要求 **AGP ≥ 9.1 且 compileSdk ≥ 37**，而 AGP 9 改变了 Kotlin 集成方式，属于工具链级升级。
-本项目固定在上表这组"稳定 AGP 8.13 + compileSdk 36 能支持的最新依赖"，并在 `.github/dependabot.yml`
-里对 AGP 大版本升级设为人工决策，避免自动 PR 把构建打断。
+本项目固定在上表这组"稳定 AGP 8.13 + compileSdk 36 能支持的最新依赖"。`.github/dependabot.yml`
+已关闭全部自动更新（`updates: []`）：依赖与 action 版本一律人工升级，并在真实构建里验证，
+避免自动 PR 把发版流水线打断。
 
 **为什么 Kotlin 是 2.2.20 而不是更新的版本**：AGP 8.13.2 自带的 R8 无法解析更新 Kotlin 的元数据，
 release 构建会刷出 "An error occurred when parsing kotlin metadata" 警告。降到 2.2.20 后
@@ -154,33 +155,37 @@ keytool -genkeypair -v -keystore ~/keys/todo-release.jks \
 
 ## 5. 发版：GitHub Flow + tag
 
-分支模型：`main` 始终可发布；每个改动走短分支 + PR + CI 通过后合并；发布即打 tag。
+分支模型：`main` 始终可发布；改动走短分支，本地跑完质量门禁后合入 `main`；发布即打 tag。
+**推 `main` 不触发任何 Actions**——只有 `v*` 标签会触发 `.github/workflows/release.yml`。
 
 ```bash
 git switch -c feat/whatever
 # ... 提交 ...
-git push -u origin feat/whatever        # 开 PR，CI 跑单测/lint/assembleDebug
-git switch main && git pull
+./gradlew testDebugUnitTest lintDebug renameReleaseApk   # 本地门禁（见第 11 节）
+git switch main && git merge --ff-only feat/whatever
+git push origin main                      # 不触发 Actions
 git tag v1.0.1
-git push origin v1.0.1                   # 触发 .github/workflows/release.yml
+git push origin v1.0.1                    # 仅这一动作触发 release.yml
 ```
 
 `release.yml` 做的事：
 
 1. `tools/verify_schema.py` + `testDebugUnitTest`；
 2. 从 `secrets.TODO_KEYSTORE_BASE64` 解出 keystore（缺失直接失败，避免发出未签名包）；
-3. `./gradlew assembleRelease -PversionName=<tag去掉v> -PversionCode=<run_number>`；
-4. `apksigner verify --print-certs` + `zipalign -c`；
-5. 生成 SHA-256，用 `softprops/action-gh-release` 创建 Release 并附上 APK。
+3. 按 tag 推导版本：`v1.2.3` → `versionName=1.2.3`、`versionCode=10203`
+   （`MAJOR*10000 + MINOR*100 + PATCH`，单调递增且与仓库历史/run_number 无关）；
+4. `./gradlew renameReleaseApk` 构建签名包，产物命名为 `Todo-<version>-release.apk`；
+5. `apksigner verify --print-certs` + `zipalign -c`；
+6. 生成 SHA-256，用 `softprops/action-gh-release` 创建 Release 并附上 APK 与校验文件。
 
 需要的 Repository secrets：`TODO_KEYSTORE_BASE64`、`TODO_KEYSTORE_PASSWORD`、`TODO_KEY_ALIAS`、`TODO_KEY_PASSWORD`。
 
 本地等价发版：
 
 ```bash
-./gradlew assembleRelease -PversionName=1.0.1 -PversionCode=2
-apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
-cp app/build/outputs/apk/release/app-release.apk dist/todo-1.0.1-release.apk
+./gradlew renameReleaseApk -PversionName=1.0.1 -PversionCode=10001
+apksigner verify --print-certs app/build/outputs/apk/release/Todo-1.0.1-release.apk
+cp app/build/outputs/apk/release/Todo-1.0.1-release.apk dist/
 ```
 
 ---
@@ -255,8 +260,9 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 
 * 主题 ID 存在 `SettingsStore` 的 `StateFlow` 里，`MainActivity` 收集后套一次 `TodoTheme`，
   **全局只有这一处切换入口**；系统栏图标明暗也由同一处设置
-* 拟态阴影由 `NeumorphicSurface` 用两层彩色阴影（左上高光 + 右下投影）实现，按下时压低高度并换凹陷底色，
-  不使用模糊滤镜，硬件加速下稳定渲染
+* 拟态阴影由 `NeumorphicSurface` 用两层彩色阴影（左上高光 + 右下投影）实现，不使用模糊滤镜，硬件加速下稳定渲染
+* 按下反馈四层叠加：阴影压低 + 凹陷底色 + 整体缩放到 0.965 + 强调色淡染；按钮另触发一次轻触觉反馈。
+  只靠阴影变化时，在相近底色上几乎看不出来，缩放与染色让"按下"一眼可辨
 * 图标是 Canvas 手绘（`ui/components/TodoIcon.kt`），不引入图标库
 
 ---
@@ -281,11 +287,11 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 ## 11. 测试与验证
 
 ```bash
-./gradlew testDebugUnitTest        # 14 个测试类、113 个用例
+./gradlew testDebugUnitTest        # 13 个文件 / 14 个测试类 / 113 个用例
 python3 tools/verify_schema.py     # 真实 SQLite 执行迁移
 node tools/web_smoke_test.mjs      # Web 页面逻辑（需先起 mock server）
 ./gradlew lintDebug                # Android Lint，当前 0 issue
-./gradlew assembleDebug assembleRelease
+./gradlew assembleDebug renameReleaseApk   # 产物 Todo-<version>-release.apk
 ```
 
 已验证 / 未验证的边界写在 [`docs/VERIFICATION.md`](docs/VERIFICATION.md)，包括"没有在真机或模拟器上跑过 UI"
@@ -306,7 +312,7 @@ app/src/main/java/app/todo/
 │   └── sync/                        文档格式与合并算法
 ├── data/
 │   ├── db/                          Schema、SQLiteOpenHelper、DAO
-│   ├── git/                         三家内容 API、SyncEngine
+│   ├── git/                         四家内容 API、SyncEngine
 │   ├── mail/                        SMTP、MIME、邮件正文
 │   └── prefs/                       SettingsStore、Keystore 加密
 ├── alarm/                           调度、通知、开机重排
@@ -316,7 +322,7 @@ app/src/main/resources/schema/       显式迁移 SQL（运行时与测试共用
 app/src/test/                        单元测试与真实格式样本
 web/index.html                       静态 Web 客户端
 tools/verify_schema.py               真实 SQLite 迁移校验
-.github/workflows/                   ci.yml（PR/主干）、release.yml（tag 发版）
+.github/workflows/                   release.yml（仅 tag `v*` 触发发版；推 main 不跑任何 Actions）
 docs/                                架构、同步协议、验证记录
 ```
 

@@ -20,10 +20,16 @@ on:
 permissions:
   contents: write
 
+# Never let two tag pushes publish at the same time.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Build signed APK and publish
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -81,19 +87,31 @@ jobs:
           # Deterministic, monotonic versionCode from semver: 1.2.3 -> 10203.
           # Keeps published codes strictly above prior local dev builds and avoids
           # coupling to github.run_number (which restarts low on a fresh repo).
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
-          VERSION_CODE=$(( ${MAJOR:-0} * 10000 + ${MINOR:-0} * 100 + ${PATCH:-0} ))
-          echo "Version ${VERSION} -> versionCode ${VERSION_CODE}"
-          ./gradlew renameReleaseApk \
-            -PversionName="$VERSION" \
-            -PversionCode="$VERSION_CODE" \
-            --console=plain
+          if [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            # 10# forces decimal: a leading zero would otherwise be read as octal.
+            MAJOR=$(( 10#${BASH_REMATCH[1]} ))
+            MINOR=$(( 10#${BASH_REMATCH[2]} ))
+            PATCH=$(( 10#${BASH_REMATCH[3]} ))
+            VERSION_CODE=$(( MAJOR * 10000 + MINOR * 100 + PATCH ))
+            echo "Tag $VERSION_NAME -> versionName $VERSION, versionCode $VERSION_CODE"
+            ./gradlew renameReleaseApk \
+              -PversionName="$VERSION" \
+              -PversionCode="$VERSION_CODE" \
+              --console=plain
+          else
+            # workflow_dispatch on a branch: fall back to the version in build.gradle.kts
+            # instead of feeding a branch name into the arithmetic.
+            echo "::warning::'$VERSION_NAME' is not a vX.Y.Z tag; using the version from build.gradle.kts."
+            ./gradlew renameReleaseApk --console=plain
+          fi
 
       - name: Verify APK is signed and aligned
         run: |
           APK=$(find app/build/outputs/apk/release -name 'Todo-*.apk' | head -n 1)
           if [ -z "$APK" ]; then
-            APK=$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)
+            echo "::error::Expected Todo-<version>-release.apk, but the output directory holds:"
+            ls -la app/build/outputs/apk/release || true
+            exit 1
           fi
           echo "APK=$APK" >> "$GITHUB_ENV"
           BUILD_TOOLS=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/* | sort -V | tail -n 1)
@@ -101,7 +119,12 @@ jobs:
           "$BUILD_TOOLS/zipalign" -c -v 4 "$APK" > /dev/null
 
       - name: Checksums
-        run: sha256sum "$APK" > "$APK.sha256"
+        run: |
+          # Write the checksum file next to the APK with a bare file name so it can be
+          # verified from any directory: sha256sum -c Todo-<version>-release.apk.sha256
+          cd "$(dirname "$APK")"
+          sha256sum "$(basename "$APK")" > "$(basename "$APK").sha256"
+          cat "$(basename "$APK").sha256"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

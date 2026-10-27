@@ -36,6 +36,7 @@ enum class TodoIconKind {
     FINGERPRINT,
     LIST,
     MORE,
+    CHEVRON,
 }
 
 /**
@@ -246,6 +247,15 @@ fun TodoIcon(
                     drawCircle(tint, radius = 1.4f * unit, center = p(x, 12f))
                 }
             }
+            TodoIconKind.CHEVRON -> drawPath(
+                path {
+                    moveTo(9.5f * unit, 5.5f * unit)
+                    lineTo(16f * unit, 12f * unit)
+                    lineTo(9.5f * unit, 18.5f * unit)
+                },
+                tint,
+                style = stroke,
+            )
         }
     }
 }

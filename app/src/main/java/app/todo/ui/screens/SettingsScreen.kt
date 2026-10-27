@@ -7,7 +7,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +44,7 @@ import app.todo.ui.MailTestResult
 import app.todo.ui.TodoViewModel
 import app.todo.ui.components.ChipFlow
 import app.todo.ui.components.DropdownField
+import app.todo.ui.components.HintBox
 import app.todo.ui.components.LabeledValueRow
 import app.todo.ui.components.NeumorphicButton
 import app.todo.ui.components.NeumorphicChip
@@ -113,15 +113,13 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = palette.textSecondary,
                 )
-                Palettes.all.chunked(3).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        row.forEach { option ->
-                            NeumorphicChip(
-                                label = stringResource(option.labelRes),
-                                selected = themeId == option.id,
-                                onClick = { vm.setTheme(option.id) },
-                            )
-                        }
+                ChipFlow {
+                    Palettes.all.forEach { option ->
+                        NeumorphicChip(
+                            label = stringResource(option.labelRes),
+                            selected = themeId == option.id,
+                            onClick = { vm.setTheme(option.id) },
+                        )
                     }
                 }
                 SwitchRow(
@@ -130,15 +128,7 @@ fun SettingsScreen(
                     onCheckedChange = vm::setShowDone,
                 )
                 Text(
-                    text = "${stringResource(R.string.home_sort)}: ${
-                        stringResource(
-                            when (sort) {
-                                TodoSort.DUE -> R.string.home_sort_due
-                                TodoSort.PRIORITY -> R.string.home_sort_priority
-                                TodoSort.CREATED -> R.string.home_sort_created
-                            },
-                        )
-                    }",
+                    text = stringResource(R.string.home_sort),
                     style = MaterialTheme.typography.bodyMedium,
                     color = palette.textSecondary,
                 )
@@ -295,11 +285,7 @@ private fun EmailSettingsSection(
             style = MaterialTheme.typography.bodyMedium,
             color = palette.textSecondary,
         )
-        Text(
-            text = stringResource(R.string.settings_email_hint),
-            style = MaterialTheme.typography.labelSmall,
-            color = palette.warning,
-        )
+        HintBox(text = stringResource(R.string.settings_email_hint))
         NeumorphicTextField(host, { host = it }, stringResource(R.string.settings_email_host))
         NeumorphicTextField(
             value = port,
@@ -341,6 +327,7 @@ private fun EmailSettingsSection(
                 onSave(config)
                 result = null
             },
+            modifier = Modifier.fillMaxWidth(),
             accent = true,
         ) {
             Text(
@@ -364,6 +351,7 @@ private fun EmailSettingsSection(
                 }
             },
             enabled = !testing,
+            modifier = Modifier.fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         ) {
             Text(

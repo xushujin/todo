@@ -1,7 +1,11 @@
 package app.todo.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,9 +43,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.todo.R
 import app.todo.core.time.TimeText
 import app.todo.domain.model.Priority
@@ -119,6 +125,39 @@ fun SectionCard(
     }
 }
 
+/**
+ * Tinted, padded block for multi-line guidance. Warning-coloured text floating on the
+ * card background reads as a wall of orange; a box gives it a shape and a comfortable
+ * line height.
+ */
+@Composable
+fun HintBox(
+    text: String,
+    modifier: Modifier = Modifier,
+    tone: Color = LocalTodoPalette.current.warning,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(tone.copy(alpha = 0.10f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = tone,
+            lineHeight = 18.sp,
+        )
+    }
+}
+
+/**
+ * Preference-style row: the label owns the first line and the state gets its own line
+ * underneath. Long states ("Not allowed — reminders may be delayed. Tap to allow.")
+ * used to be squeezed onto the label's line and wrapped mid-word, which is what made
+ * the settings screen look ragged.
+ */
 @Composable
 fun LabeledValueRow(
     label: String,
@@ -127,16 +166,54 @@ fun LabeledValueRow(
     valueColor: Color = LocalTodoPalette.current.textPrimary,
 ) {
     val palette = LocalTodoPalette.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val tint by animateColorAsState(
+        targetValue = if (pressed) palette.accent.copy(alpha = 0.10f) else Color.Transparent,
+        animationSpec = tween(durationMillis = 90),
+        label = "rowPressTint",
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .clip(RoundedCornerShape(14.dp))
+            .background(tint)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        role = Role.Button,
+                        onClick = onClick,
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = palette.textSecondary)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = valueColor)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = palette.textPrimary,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = valueColor,
+                lineHeight = 20.sp,
+            )
+        }
+        if (onClick != null) {
+            TodoIcon(
+                kind = TodoIconKind.CHEVRON,
+                tint = palette.textSecondary,
+                size = 16.dp,
+            )
+        }
     }
 }
 
@@ -149,15 +226,28 @@ fun SwitchRow(
     enabled: Boolean = true,
 ) {
     val palette = LocalTodoPalette.current
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val tint by animateColorAsState(
+        targetValue = if (pressed && enabled) palette.accent.copy(alpha = 0.10f) else Color.Transparent,
+        animationSpec = tween(durationMillis = 90),
+        label = "switchRowPressTint",
+    )
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(vertical = 4.dp),
+            .clip(RoundedCornerShape(14.dp))
+            .background(tint)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                enabled = enabled,
+            ) { onCheckedChange(!checked) }
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 title,
                 style = MaterialTheme.typography.bodyLarge,

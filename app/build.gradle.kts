@@ -73,7 +73,16 @@ val versionNameOverride: String? = providers.gradleProperty("versionName").orNul
 val versionCodeOverride: Int? = providers.gradleProperty("versionCode").orNull?.toIntOrNull()
 
 // Single source of truth for the shipped version name; also used to name the APK.
-val defaultVersionName: String = versionNameOverride ?: "1.0.0"
+val defaultVersionName: String = versionNameOverride ?: "1.0.1"
+
+/** 1.2.3 -> 10203, the same scheme the release workflow derives from a tag. */
+fun semverToVersionCode(version: String): Int {
+    val parts = version.split(".")
+    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    return major * 10_000 + minor * 100 + patch
+}
 
 android {
     namespace = "app.todo"
@@ -83,7 +92,7 @@ android {
         applicationId = "app.todo"
         minSdk = 30
         targetSdk = 36
-        versionCode = versionCodeOverride ?: 1
+        versionCode = versionCodeOverride ?: semverToVersionCode(defaultVersionName)
         versionName = defaultVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

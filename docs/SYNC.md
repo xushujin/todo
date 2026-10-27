@@ -85,7 +85,7 @@ catch (conflict) { 重新 read → 重新 merge → 重试，最多 3 次 }
 `SyncReport` 返回 `pulled / pushed / conflicts / revision / syncedAt / pushedToRemote`，
 同步页据此展示结果；`syncedAt` 会被写回 `SettingsStore.lastSyncAt`，作为下次的冲突基线。
 
-## 4. 三家平台的差异（`data/git/*ContentStore.kt`）
+## 4. 四家平台的差异（`data/git/*ContentStore.kt`）
 
 | | GitHub | Gitee | Gitea / Forgejo | GitLab |
 | --- | --- | --- | --- | --- |

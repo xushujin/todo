@@ -17,12 +17,13 @@
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 全量构建 | `./gradlew clean assembleDebug assembleRelease testDebugUnitTest lintDebug` | **BUILD SUCCESSFUL**，输出中 `w:` / `e:` / `warning` 行数为 **0** |
-| 单元测试 | 同上 | **113 个用例 / 14 个测试类，0 失败 0 跳过** |
+| 单元测试 | 同上 | **113 个用例 / 14 个测试类（13 个文件），0 失败 0 跳过** |
 | Android Lint | `./gradlew lintDebug` | **0 issue**（`app/build/reports/lint-results-debug.xml` 为空） |
 | 迁移校验 | `python3 tools/verify_schema.py` | **passed**（2 个迁移文件、列与索引一致、无破坏性语句） |
 | Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **21 项检查全部通过**（含 Gitee 分支） |
 | Debug APK | `assembleDebug` | 29 MB，`app/build/outputs/apk/debug/app-debug.apk` |
-| Release APK | `assembleRelease`（本地 keystore 通道） | 2.9 MB，`apksigner verify` 通过，`zipalign -c 4` 通过 |
+| Release APK | `renameReleaseApk`（本地 keystore 通道） | 约 3.2 MB，`Todo-<version>-release.apk`，`apksigner verify` 通过，`zipalign -c 4` 通过 |
+| GitHub 发布流水线 | 推送 tag `v1.0.0` | **success**；Release「Todo v1.0.0」发布 `Todo-1.0.0-release.apk`（3,167,690 B）+ `.sha256` |
 
 Release 签名证书（本机持久密钥，位于仓库之外 `~/keys/todo-release.jks`，口令在 git-ignored 的
 `keystore.properties`）：
@@ -33,7 +34,8 @@ Signer #1 certificate SHA-256: 720a817308c38d9fa48da8f4d04e6f478eaca78e6d6ef98eb
 minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 ```
 
-该 APK 只用于本机安装与验证，未发布到任何公开渠道。
+该 APK 从 v1.0.0 起通过 GitHub Releases 公开发布（`Todo-1.0.0-release.apk`），使用同一把密钥签名，
+证书指纹不变，已安装旧包的设备可以直接覆盖升级。
 
 ## 3. 真实格式 / 协议验证（不是"编译通过"）
 
@@ -85,11 +87,12 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
    中文主题在邮件客户端中的显示，均未验证。
 5. **闹钟与通知**：`setAlarmClock` 的实际触发时间、Doze 表现、开机重排、通知渠道与点击跳转，未在设备上验证。
 6. **Android Keystore 加密**：`KeystoreSecretCipher` 依赖真实 Android Keystore，JVM 单测无法覆盖。
-7. **CI 工作流**：`.github/workflows/*.yml` 未在 GitHub 上运行过（本地无远端仓库），YAML 仅人工检查；
-   secrets 名称、`apksigner` 路径、tag 触发逻辑需要在真实仓库首跑时确认。
-8. **Release APK 运行**：只验证了"能构建、能签名、能对齐"，没有安装到设备运行（R8 混淆后的运行时行为未验证）。
-9. **Web 页面视觉**：只做了脚本逻辑冒烟测试，没有浏览器渲染/交互截图；未验证 Safari 兼容性与移动端布局。
-10. **多设备并发**：合并算法有单测，但没有两台真实设备同时同步的端到端测试。
+7. **Release APK 运行**：只验证了"能构建、能签名、能对齐"，没有安装到设备运行（R8 混淆后的运行时行为未验证）。
+8. **Web 页面视觉**：只做了脚本逻辑冒烟测试，没有浏览器渲染/交互截图；未验证 Safari 兼容性与移动端布局。
+9. **多设备并发**：合并算法有单测，但没有两台真实设备同时同步的端到端测试。
+
+> 发布流水线本身已经实测：`v1.0.0` 标签在真实仓库触发 `release.yml` 并成功发布，
+> 见第 2 节表格最后一行；`ci.yml` 已删除，推 `main` 不触发任何工作流。
 
 ## 6. 如何补验（建议顺序）
 
@@ -108,9 +111,9 @@ adb shell dumpsys alarm | grep -A3 app.todo
 # 4) 邮件
 #    设置页填写 SMTP 后点"发送测试邮件"，检查收件箱
 
-# 5) CI
-git remote add origin <your repo> && git push -u origin main
-git tag v1.0.0 && git push origin v1.0.0
+# 5) CI（已完成）
+#    v1.0.0 已通过 tag 触发 release.yml 并成功发布；新版本沿用同一流程：
+#    git tag v1.0.1 && git push origin v1.0.1
 ```
 
 ## 7. 本次验证中发现并修复的问题（留痕）
@@ -137,3 +140,9 @@ git tag v1.0.0 && git push origin v1.0.0
 | strings.xml 撇号未转义导致 AAPT 构建失败 | 转义 `'` 并加入 `StringResourceConsistencyTest.apostrophesAreEscaped` |
 | 同步页「上次同步」后面显示 `%1$s` | `sync_last` 字符串带占位符却未传参；改为纯标签 + 独立时间值，并新增 `StringResourceConsistencyTest` 双向扫描（已用"故意改回 bug"验证该测试确实会失败） |
 | 每次切应用都要求指纹、且未保存的编辑页丢失 | 增加「锁定时限」（默认 1 分钟）与 `LockPolicy`；应用内容包进 `SaveableStateHolder`，编辑页改用 `rememberSaveable` 并加初始化守卫，解锁后回到原页面、草稿保留 |
+| 设置页状态文案与标签挤在一行，「精确闹钟」的状态换行错位 | `LabeledValueRow` 改为两行偏好行（标签 / 状态 / 右箭头），长提示包进 `HintBox`；主题 chip 改 `ChipFlow`，去掉排序标签里与选中 chip 重复的值 |
+| 按钮按下几乎没有反馈 | `NeumorphicSurface` 增加 0.965 缩放 + 强调色淡染，按钮加轻触觉反馈；`SwitchRow` / `LabeledValueRow` 增加按压底色 |
+| 发布流水线首次运行失败（`Failed to find package 'tools'`） | `setup-android` 默认安装的 `tools` 包已下架；改为显式安装 `platform-tools` / `platforms;android-36` / `build-tools;35.0.0` |
+| versionCode 用 `run_number`，新仓库首跑可能小于已装 dev 包 | 改按语义版本推导：`MAJOR*10000 + MINOR*100 + PATCH`（v1.0.1 → 10001） |
+| Release 资产名是 `app-release.apk` | 新增 `renameReleaseApk` 任务，产物 `Todo-<version>-release.apk`；AGP 8.13 已移除 `outputFileName` API，只能在构建后重命名 |
+| Actions 页被 Dependabot 运行刷屏 | `dependabot.yml` 改为 `updates: []`；删除 `ci.yml`，推 main 不再触发任何工作流 |

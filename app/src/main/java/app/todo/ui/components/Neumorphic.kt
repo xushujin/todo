@@ -1,5 +1,9 @@
 package app.todo.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -27,6 +31,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -60,7 +67,31 @@ fun NeumorphicSurface(
     val effectiveElevation = if (pressed) elevation / 3 else elevation
     val shift = if (pressed) 0.5.dp else 1.5.dp
 
-    Box(modifier, contentAlignment = contentAlignment) {
+    // Elevation alone is far too subtle on a same-coloured surface, so a press also
+    // shrinks the control slightly and washes it with the accent colour. The scale is
+    // a draw-time transform, so it never reflows the surrounding layout.
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.965f else 1f,
+        animationSpec = spring(dampingRatio = 0.45f, stiffness = 900f),
+        label = "surfacePressScale",
+    )
+    val pressTint by animateColorAsState(
+        targetValue = if (pressed) {
+            palette.accent.copy(alpha = if (palette.isDark) 0.18f else 0.10f)
+        } else {
+            Color.Transparent
+        },
+        animationSpec = tween(durationMillis = 90),
+        label = "surfacePressTint",
+    )
+
+    Box(
+        modifier.graphicsLayer {
+            scaleX = pressScale
+            scaleY = pressScale
+        },
+        contentAlignment = contentAlignment,
+    ) {
         Box(
             Modifier
                 .matchParentSize()
@@ -79,6 +110,12 @@ fun NeumorphicSurface(
                 .clip(shape)
                 .background(if (pressed) palette.surfaceSunken else color),
         )
+        Box(
+            Modifier
+                .matchParentSize()
+                .clip(shape)
+                .background(pressTint),
+        )
         Box(Modifier.padding(contentPadding), contentAlignment = contentAlignment, content = content)
     }
 }
@@ -93,6 +130,7 @@ fun NeumorphicButton(
     content: @Composable RowScope.() -> Unit,
 ) {
     val palette = LocalTodoPalette.current
+    val haptics = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     NeumorphicSurface(
@@ -103,7 +141,10 @@ fun NeumorphicButton(
                 indication = null,
                 enabled = enabled,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onClick()
+                },
             ),
         shape = RoundedCornerShape(16.dp),
         elevation = if (accent) 8.dp else 5.dp,
@@ -139,6 +180,7 @@ fun NeumorphicIconButton(
     enabled: Boolean = true,
 ) {
     val palette = LocalTodoPalette.current
+    val haptics = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     NeumorphicSurface(
@@ -149,7 +191,10 @@ fun NeumorphicIconButton(
                 indication = null,
                 enabled = enabled,
                 role = Role.Button,
-                onClick = onClick,
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onClick()
+                },
             ),
         shape = CircleShape,
         elevation = if (accent) 9.dp else 5.dp,

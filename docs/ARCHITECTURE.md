@@ -53,7 +53,7 @@ SettingsStore → TodoDb → TodoDao → SqliteTodoRepository
 | schema 作为资源文件 | 运行时与测试读同一份文件，不会出现"建表"和"迁移"两套定义 | 需要保证文件名版本号连续（已有单测与脚本） |
 | 手写 JSON | 只服务两种结构（同步文档、REST 响应），避免序列化框架与反射 | 需要自己处理转义与数字精度 |
 | 手写 SMTP | 只为"发一封纯文本提醒"，JavaMail 太重 | TLS 之外的扩展（DKIM、附件）不做 |
-| Git 走内容 REST API | 自建 pack 协议成本极高且易错；三家平台都提供内容 API | 裸 git 服务器不支持；单文件 1 MB |
+| Git 走内容 REST API | 自建 pack 协议成本极高且易错；四家平台都提供内容 API | 裸 git 服务器不支持；单文件 1 MB |
 | 单文件全量快照 | 合并逻辑简单、可测、Web 端易实现 | 数据量大时每次全量写 |
 | 自绘图标 | 不引图标库，风格统一 | 图标数量有限 |
 | 手工导航栈 | 页面少，避免 navigation-compose 依赖与序列化 | 无深层链接、无转场动画 |
@@ -95,9 +95,13 @@ SettingsStore → TodoDb → TodoDao → SqliteTodoRepository
 * `BootReceiver` 监听 `BOOT_COMPLETED / MY_PACKAGE_REPLACED / TIME_SET / TIMEZONE_CHANGED`，从数据库重排全部未来提醒
 * 完成或删除任务会取消对应 PendingIntent（请求码由 `id.hashCode()` 派生，稳定可取消）
 
-## 7. 主题
+## 8. 主题与交互反馈
 
 `TodoPalette` 是一个不可变数据类，包含背景/表面/凹陷/强调色/明暗阴影/语义色。
 `SettingsStore.themeId` 是唯一状态源，`MainActivity` 收集后传给 `TodoTheme`，
 再通过 `LocalTodoPalette` 提供给所有组件；系统栏明暗也在同一处设置。
 新增主题只需在 `Palettes.all` 里加一项（并补两个语言的名称字符串）。
+
+拟态控件的按下反馈由 `NeumorphicSurface` 统一实现：阴影压低 + 凹陷底色 + 整体缩放 0.965 +
+强调色淡染；`NeumorphicButton` / `NeumorphicIconButton` 另触发一次轻触觉反馈。
+缩放是绘制期变换，不参与布局，所以不会引起列表抖动。
