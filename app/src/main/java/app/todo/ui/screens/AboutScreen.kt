@@ -53,6 +53,9 @@ fun AboutScreen(onBack: () -> Unit) {
             SectionCard(title = stringResource(R.string.about_licenses)) {
                 InfoLine(null, stringResource(R.string.about_licenses_value))
             }
+            SectionCard(title = stringResource(R.string.about_license)) {
+                InfoLine(null, stringResource(R.string.about_license_value))
+            }
         }
     }
 }

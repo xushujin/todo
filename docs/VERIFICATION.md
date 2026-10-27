@@ -146,3 +146,5 @@ adb shell dumpsys alarm | grep -A3 app.todo
 | versionCode 用 `run_number`，新仓库首跑可能小于已装 dev 包 | 改按语义版本推导：`MAJOR*10000 + MINOR*100 + PATCH`（v1.0.1 → 10001） |
 | Release 资产名是 `app-release.apk` | 新增 `renameReleaseApk` 任务；1.0.2 起产物为 `Todo-<version>.apk`（最初带 `-release` 后缀，用户反馈多余后去掉）；AGP 8.13 已移除 `outputFileName` API，只能在构建后重命名 |
 | Actions 页被 Dependabot 运行刷屏 | `dependabot.yml` 改为 `updates: []`；删除 `ci.yml`，推 main 不再触发任何工作流 |
+| 提醒设 10:55、邮件 11:02 才发出 | 接收器只用 `goAsync()`、没有 WakeLock：`onReceive` 返回后系统就释放唤醒锁，熄屏时 SMTP 被挂起，直到亮屏才继续。`ReminderReceiver` / `BootReceiver` 改为持 `PARTIAL_WAKE_LOCK`（60s / 30s 超时兜底），并在 `finally` 释放 |
+| 项目未声明开源协议 | 根目录加 Apache License 2.0 全文 `LICENSE`，同时打进 `app/src/main/assets/LICENSE`；README 第 14 节与关于页「开源协议」同步说明 |

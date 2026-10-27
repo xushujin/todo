@@ -73,7 +73,7 @@ val versionNameOverride: String? = providers.gradleProperty("versionName").orNul
 val versionCodeOverride: Int? = providers.gradleProperty("versionCode").orNull?.toIntOrNull()
 
 // Single source of truth for the shipped version name; also used to name the APK.
-val defaultVersionName: String = versionNameOverride ?: "1.0.2"
+val defaultVersionName: String = versionNameOverride ?: "1.0.3"
 
 /** 1.2.3 -> 10203, the same scheme the release workflow derives from a tag. */
 fun semverToVersionCode(version: String): Int {

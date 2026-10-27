@@ -171,6 +171,8 @@
     <string name="about_privacy_value">All task data stays in the local database. Nothing is uploaded unless you configure a git repository. Tokens and SMTP passwords are encrypted with an Android Keystore key.</string>
     <string name="about_licenses">Libraries</string>
     <string name="about_licenses_value">AndroidX Core, Activity Compose, Lifecycle, Compose UI / Foundation / Material 3, Kotlin coroutines. No UI kit, no DI framework, no JGit, no JavaMail.</string>
+    <string name="about_license">License</string>
+    <string name="about_license_value">Apache License 2.0. Free to use, modify and redistribute, including commercially, provided the copyright and license notices are kept and a copy of the license is included.</string>
 
     <string name="notification_channel_reminders">Task reminders</string>
     <string name="notification_channel_reminders_desc">Clock-style reminders for tasks with a reminder time.</string>
