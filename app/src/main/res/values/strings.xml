@@ -111,6 +111,19 @@
     <string name="settings_email_incomplete">Fill in host, username, password and recipient first.</string>
     <string name="settings_data">Data</string>
     <string name="settings_purge">Purge deleted records older than 30 days</string>
+    <string name="settings_update">Software update</string>
+    <string name="update_current_version">Current version</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You are up to date</string>
+    <string name="update_available">Version %1$s is available</string>
+    <string name="update_download">Download and install</string>
+    <string name="update_downloading">Downloading %1$d%%</string>
+    <string name="update_ready">Download complete, ready to install</string>
+    <string name="update_install">Install now</string>
+    <string name="update_later">Later</string>
+    <string name="update_failed">Update check failed: %1$s</string>
+    <string name="update_retry">Retry download</string>
     <string name="settings_about">About</string>
     <string name="settings_saved">Saved</string>
 
@@ -166,7 +179,7 @@
     <string name="about_support">Supported range</string>
     <string name="about_support_value">Android 11 (API 30) through Android 16 (API 36). No third-party UI or DI libraries.</string>
     <string name="about_permissions">Permissions</string>
-    <string name="about_permissions_value">Internet + network state (git sync, email reminders) · notifications · exact alarms · boot completed (reschedule reminders) · biometric (app lock) · vibrate/wake lock (alarm delivery)</string>
+    <string name="about_permissions_value">Internet + network state (git sync, email reminders) · notifications · exact alarms · boot completed (reschedule reminders) · biometric (app lock) · vibrate/wake lock (alarm delivery) · install packages (in-app update)</string>
     <string name="about_privacy">Privacy</string>
     <string name="about_privacy_value">All task data stays in the local database. Nothing is uploaded unless you configure a git repository. Tokens and SMTP passwords are encrypted with an Android Keystore key.</string>
     <string name="about_licenses">Libraries</string>

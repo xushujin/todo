@@ -20,8 +20,12 @@ import app.todo.data.mail.EmailReminderSender
 import app.todo.data.mail.SmtpClient
 import app.todo.data.prefs.KeystoreSecretCipher
 import app.todo.data.prefs.SettingsStore
+import app.todo.data.update.ApkDownloader
+import app.todo.data.update.ApkInstaller
+import app.todo.data.update.UpdateChecker
 import app.todo.domain.repo.SqliteTodoRepository
 import app.todo.domain.repo.TodoRepository
+import java.io.File
 
 /**
  * Hand-written dependency container. The app has no DI framework on purpose:
@@ -52,6 +56,13 @@ class AppGraph(context: Context) {
     val notifier = Notifier(appContext)
     val reminderScheduler = ReminderScheduler(appContext)
     val reminderDelivery = ReminderDelivery(repository, notifier, settings, emailSender)
+
+    val updateChecker = UpdateChecker(transport)
+    val apkDownloader = ApkDownloader()
+    val apkInstaller = ApkInstaller(appContext)
+
+    /** Cache directory the updater writes `Todo-<version>.apk` into. */
+    fun updateDir(): File = File(appContext.cacheDir, "updates").apply { mkdirs() }
 
     /** Localized name for the list re-created when the user deletes every list. */
     fun inboxName(): String = appContext.getString(R.string.lists_inbox)

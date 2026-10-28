@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.todo.AppGraph
+import app.todo.ui.components.UpdateDialog
 import app.todo.ui.screens.AboutScreen
 import app.todo.ui.screens.EditorScreen
 import app.todo.ui.screens.HomeScreen
@@ -73,6 +75,9 @@ fun AppRoot(graph: AppGraph, initialTodoId: String?) {
 
     BackHandler(enabled = keys.size > 1) { pop() }
 
+    val updateState by vm.updateState.collectAsStateWithLifecycle()
+    val updateDialogVisible by vm.updateDialogVisible.collectAsStateWithLifecycle()
+
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         when (current) {
             Screen.Home -> HomeScreen(
@@ -95,6 +100,15 @@ fun AppRoot(graph: AppGraph, initialTodoId: String?) {
                 vm = vm,
                 todoId = current.todoId,
                 onDone = { pop() },
+            )
+        }
+
+        if (updateDialogVisible) {
+            UpdateDialog(
+                state = updateState,
+                onDownload = vm::downloadUpdate,
+                onInstall = vm::installUpdate,
+                onDismiss = vm::dismissUpdate,
             )
         }
     }

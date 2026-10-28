@@ -15,6 +15,7 @@ data/          平台相关实现
   ├─ db/       手写 SQLiteOpenHelper + DAO + 迁移 SQL 资源
   ├─ git/      四家内容 API（GitHub/Gitee/Gitea/GitLab）、SyncEngine
   ├─ mail/     SMTP 客户端、MIME 构造
+  ├─ update/   应用内更新：Release 检查、下载校验、安装
   └─ prefs/    SettingsStore（唯一设置源）、Keystore 加密
 alarm/         AlarmManager 调度、通知、开机重排、提醒投递
 security/      BiometricGate（应用锁）
@@ -105,3 +106,11 @@ SettingsStore → TodoDb → TodoDao → SqliteTodoRepository
 拟态控件的按下反馈由 `NeumorphicSurface` 统一实现：阴影压低 + 凹陷底色 + 整体缩放 0.965 +
 强调色淡染；`NeumorphicButton` / `NeumorphicIconButton` 另触发一次轻触觉反馈。
 缩放是绘制期变换，不参与布局，所以不会引起列表抖动。
+
+## 9. 应用内更新
+
+`UpdateChecker` 读 GitHub Releases 的 `latest`，用与构建一致的 `versionCode` 比较版本；
+`ApkDownloader` 用独立连接跟随 302 下载，并按 release 元数据里的 `digest` 校验 SHA-256；
+`ApkInstaller` 通过 `FileProvider`（只暴露 `cache/updates/`）把文件交给系统安装器。
+状态由 `TodoViewModel.UpdateState` 承载，对话框挂在 `AppRoot`，因此任何页面都能弹出；
+自动检查每天最多一次，手动检查在设置页。

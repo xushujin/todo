@@ -4,7 +4,7 @@
 时钟闹钟 + 邮件双通道提醒，生物识别应用锁，以及通过**自建 Git 仓库**完成的双向同步。
 仓库里还带一个纯静态 Web 页面，读取同一个 `data/todos.json` 做展示与操作。
 
-> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.0.3` · 支持 Android 11（API 30）– Android 16（API 36）
+> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.1.0` · 支持 Android 11（API 30）– Android 16（API 36）
 > 开源协议：**Apache License 2.0**（见 [`LICENSE`](LICENSE)）
 
 ---
@@ -26,8 +26,9 @@
 | 关于页 | `ui/screens/AboutScreen.kt`：应用名/版本号/包名/技术栈/支持范围/权限说明/隐私 |
 | 双通道签名 | `app/build.gradle.kts` 中 `ReleaseSigning`（`keystore.properties` 或 CI 环境变量） |
 | 打 tag 触发 CI 构建并发布 Release | `.github/workflows/release.yml` |
+| 应用内在线更新 | `data/update/`：检查 GitHub Releases → 下载（SHA-256 校验）→ FileProvider 交给系统安装器；设置页「软件更新」 |
 | 零编译警告 | `allWarningsAsErrors = true` + `-Xlint:all -Werror`，实际构建无警告输出 |
-| 核心逻辑单测 | `app/src/test/` 共 13 个文件、14 个测试类、113 个用例，覆盖 JSON/Base64/合并/协议/HTTP/SMTP/迁移/查询 |
+| 核心逻辑单测 | `app/src/test/` 共 14 个文件、15 个测试类、119 个用例，覆盖 JSON/Base64/合并/协议/HTTP/SMTP/迁移/查询/版本解析 |
 | 二进制/格式类解析用真实文件验证 | 测试用真实结构的 GitHub/GitLab 响应样本；SMTP 走真实 socket；HTTP 走真实本地服务器；schema 用真实 SQLite 执行 |
 
 ---
@@ -277,6 +278,7 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 | `SCHEDULE_EXACT_ALARM` | 精确提醒；未授权时降级为 `setAndAllowWhileIdle` 并在设置页提示 |
 | `RECEIVE_BOOT_COMPLETED` | 重启/更新/改时间后重排提醒 |
 | `USE_BIOMETRIC` | 应用锁 |
+| `REQUEST_INSTALL_PACKAGES` | 应用内更新：把下载好的 APK 交给系统安装器 |
 | `VIBRATE`、`WAKE_LOCK` | 提醒投递 |
 
 * 任务数据只存在本地 SQLite；只有配置仓库后才联网
@@ -288,7 +290,7 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 ## 11. 测试与验证
 
 ```bash
-./gradlew testDebugUnitTest        # 13 个文件 / 14 个测试类 / 113 个用例
+./gradlew testDebugUnitTest        # 14 个文件 / 15 个测试类 / 119 个用例
 python3 tools/verify_schema.py     # 真实 SQLite 执行迁移
 node tools/web_smoke_test.mjs      # Web 页面逻辑（需先起 mock server）
 ./gradlew lintDebug                # Android Lint，当前 0 issue
@@ -315,6 +317,7 @@ app/src/main/java/app/todo/
 │   ├── db/                          Schema、SQLiteOpenHelper、DAO
 │   ├── git/                         四家内容 API、SyncEngine
 │   ├── mail/                        SMTP、MIME、邮件正文
+│   ├── update/                      应用内更新：Release 检查、下载校验、安装
 │   └── prefs/                       SettingsStore、Keystore 加密
 ├── alarm/                           调度、通知、开机重排
 ├── security/                        BiometricGate
@@ -343,7 +346,22 @@ docs/                                架构、同步协议、验证记录
 
 ---
 
-## 14. 开源协议
+## 14. 应用内更新
+
+设置页「软件更新」可以随时检查；应用回到前台时也会**每天最多自动检查一次**。
+
+* 数据源：GitHub Releases 的 `releases/latest`（只认 `vX.Y.Z` 标签）
+* 版本比较用与构建相同的 `versionCode`（`MAJOR*10000 + MINOR*100 + PATCH`），只比较整数
+* 下载使用独立连接（跟随 GitHub 的 302 跳转；同步用的传输层刻意禁止跳转，不能复用），
+  进度回传到对话框
+* 校验：先比字节数，再比 release 元数据里的 `digest`（SHA-256）；任一不符都会删除文件并报错
+* 安装：`FileProvider`（authority `${applicationId}.fileprovider`，只暴露 `cache/updates/`）+
+  `ACTION_VIEW`；未授予「安装未知应用」时会跳到系统设置页，授权后回来再点一次
+* 最后一道防线是系统：APK 签名必须与已安装版本一致，否则安装器直接拒绝
+
+---
+
+## 15. 开源协议
 
 本项目采用 **Apache License 2.0**，全文见仓库根目录 [`LICENSE`](LICENSE)。
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Update APKs are downloaded to cacheDir/updates and handed to the system
+         installer through this provider; nothing else is exposed. -->
+    <cache-path name="updates" path="updates/" />
+</paths>

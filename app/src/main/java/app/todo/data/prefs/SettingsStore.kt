@@ -57,6 +57,9 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
     private val _lastSyncAt = MutableStateFlow(prefs.getLong(KEY_LAST_SYNC, 0L))
     val lastSyncAt: StateFlow<Long> = _lastSyncAt.asStateFlow()
 
+    private val _lastUpdateCheckAt = MutableStateFlow(prefs.getLong(KEY_LAST_UPDATE_CHECK, 0L))
+    val lastUpdateCheckAt: StateFlow<Long> = _lastUpdateCheckAt.asStateFlow()
+
     private val _syncConfig = MutableStateFlow(loadSyncConfig())
     val syncConfig: StateFlow<SyncConfig?> = _syncConfig.asStateFlow()
 
@@ -96,6 +99,11 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
     fun setLastSyncAt(value: Long) {
         prefs.edit { putLong(KEY_LAST_SYNC, value) }
         _lastSyncAt.value = value
+    }
+
+    fun setLastUpdateCheckAt(value: Long) {
+        prefs.edit { putLong(KEY_LAST_UPDATE_CHECK, value) }
+        _lastUpdateCheckAt.value = value
     }
 
     fun saveSyncConfig(config: SyncConfig?) {
@@ -179,6 +187,7 @@ class SettingsStore(context: Context, private val cipher: SecretCipher) {
         private const val KEY_AUTO_SYNC = "autoSyncEnabled"
         private const val KEY_LOCK_TIMEOUT = "lockTimeoutSeconds"
         private const val KEY_LAST_SYNC = "lastSyncAt"
+        private const val KEY_LAST_UPDATE_CHECK = "lastUpdateCheckAt"
         private const val KEY_SYNC = "syncConfig"
         private const val KEY_EMAIL = "emailConfig"
     }

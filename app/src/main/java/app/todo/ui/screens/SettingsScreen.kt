@@ -39,6 +39,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.todo.BuildConfig
 import app.todo.R
 import app.todo.data.mail.SmtpConfig
 import app.todo.data.mail.SmtpSecurity
@@ -46,6 +47,7 @@ import app.todo.domain.model.TodoSort
 import app.todo.ui.MailErrorKind
 import app.todo.ui.MailTestResult
 import app.todo.ui.TodoViewModel
+import app.todo.ui.UpdateState
 import app.todo.ui.components.ChipFlow
 import app.todo.ui.components.DropdownField
 import app.todo.ui.components.HintBox
@@ -61,6 +63,7 @@ import app.todo.ui.components.TodoIconKind
 import app.todo.ui.theme.LocalTodoPalette
 import app.todo.ui.theme.Palettes
 import kotlinx.coroutines.delay
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
@@ -78,6 +81,7 @@ fun SettingsScreen(
     val showDone by vm.settings.showDone.collectAsStateWithLifecycle()
     val sort by vm.settings.sort.collectAsStateWithLifecycle()
     val emailConfig by vm.settings.emailConfig.collectAsStateWithLifecycle()
+    val updateState by vm.updateState.collectAsStateWithLifecycle()
 
     var notificationsGranted by remember {
         mutableStateOf(
@@ -226,6 +230,67 @@ fun SettingsScreen(
                         text = stringResource(R.string.settings_purge),
                         style = MaterialTheme.typography.labelLarge,
                         color = palette.textPrimary,
+                    )
+                }
+            }
+
+            SectionCard(title = stringResource(R.string.settings_update)) {
+                LabeledValueRow(
+                    label = stringResource(R.string.update_current_version),
+                    value = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                )
+                val status = when (val state = updateState) {
+                    UpdateState.Idle -> null
+                    UpdateState.Checking -> stringResource(R.string.update_checking)
+                    UpdateState.UpToDate -> stringResource(R.string.update_up_to_date)
+                    is UpdateState.Available ->
+                        stringResource(R.string.update_available, state.info.versionName)
+                    is UpdateState.Downloading ->
+                        stringResource(R.string.update_downloading, (state.progress * 100).roundToInt())
+                    is UpdateState.Ready -> stringResource(R.string.update_ready)
+                    is UpdateState.Failed -> stringResource(R.string.update_failed, state.message)
+                }
+                if (status != null) {
+                    Text(
+                        text = status,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = when (updateState) {
+                            is UpdateState.Failed -> palette.danger
+                            UpdateState.UpToDate, is UpdateState.Ready -> palette.success
+                            else -> palette.textSecondary
+                        },
+                    )
+                }
+                val buttonLabel = when (val state = updateState) {
+                    UpdateState.Checking -> stringResource(R.string.update_checking)
+                    is UpdateState.Downloading ->
+                        stringResource(R.string.update_downloading, (state.progress * 100).roundToInt())
+                    is UpdateState.Available -> stringResource(R.string.update_download)
+                    is UpdateState.Ready -> stringResource(R.string.update_install)
+                    is UpdateState.Failed ->
+                        if (state.info != null) stringResource(R.string.update_retry)
+                        else stringResource(R.string.update_check)
+                    UpdateState.Idle, UpdateState.UpToDate -> stringResource(R.string.update_check)
+                }
+                NeumorphicButton(
+                    onClick = {
+                        when (val state = updateState) {
+                            is UpdateState.Available -> vm.downloadUpdate()
+                            is UpdateState.Ready -> vm.installUpdate()
+                            is UpdateState.Failed ->
+                                if (state.info != null) vm.downloadUpdate() else vm.checkForUpdate()
+                            else -> vm.checkForUpdate()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = updateState !is UpdateState.Checking &&
+                        updateState !is UpdateState.Downloading,
+                    accent = true,
+                ) {
+                    Text(
+                        text = buttonLabel,
+                        color = palette.onAccent,
+                        style = MaterialTheme.typography.labelLarge,
                     )
                 }
             }

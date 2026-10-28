@@ -17,7 +17,7 @@
 | 检查 | 命令 | 结果 |
 | --- | --- | --- |
 | 全量构建 | `./gradlew clean assembleDebug assembleRelease testDebugUnitTest lintDebug` | **BUILD SUCCESSFUL**，输出中 `w:` / `e:` / `warning` 行数为 **0** |
-| 单元测试 | 同上 | **113 个用例 / 14 个测试类（13 个文件），0 失败 0 跳过** |
+| 单元测试 | 同上 | **119 个用例 / 15 个测试类（14 个文件），0 失败 0 跳过** |
 | Android Lint | `./gradlew lintDebug` | **0 issue**（`app/build/reports/lint-results-debug.xml` 为空） |
 | 迁移校验 | `python3 tools/verify_schema.py` | **passed**（2 个迁移文件、列与索引一致、无破坏性语句） |
 | Web 逻辑 | `node tools/web_smoke_test.mjs http://127.0.0.1:8765` | **21 项检查全部通过**（含 Gitee 分支） |
@@ -53,7 +53,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | Web 页面 | Node VM 执行页面真实脚本 + 真实 `fetch` 打 `tools/web_mock_server.py` | 空仓库首写、schema 字段、重新加载、过期令牌触发合并重试、完成/删除写墓碑；Gitee：`POST` 新建、数组响应解析、`PUT` 更新 |
 | Gitee 接口契约 | 对照官方 OpenAPI 描述 `https://gitee.com/api/v5/swagger_doc.json` | 路径 `/api/v5/repos/{owner}/{repo}/contents/{path}`、`access_token` 查询参数、创建 `POST` / 更新 `PUT` 且 `sha` 必填、返回 `content.sha` |
 
-## 4. 单元测试清单（113 用例）
+## 4. 单元测试清单（119 用例）
 
 | 测试类 | 覆盖 |
 | --- | --- |
@@ -71,6 +71,7 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 | `SyncPolicyTest` | 前台同步节流（首次必跑、60 秒内跳过）、本地改动防抖窗口 |
 | `LockPolicyTest` | 锁定时限：立即、宽限期内不锁、到点锁、无基线时锁 |
 | `SyncEngineTest` | 首次推送、纯拉取、无变化不写、冲突后重读重试、超过重试上限、非法 schema、非法配置、空文件当空文档、分支不存在时用默认分支解释 404 |
+| `UpdateCheckerTest` | 语义版本 → versionCode（含非 semver 拒绝）、Release JSON 解析、APK 资产优先选择、缺失 digest/size 容错、坏 JSON |
 
 ## 5. 明确**没有**验证的部分
 
@@ -90,6 +91,8 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 7. **Release APK 运行**：只验证了"能构建、能签名、能对齐"，没有安装到设备运行（R8 混淆后的运行时行为未验证）。
 8. **Web 页面视觉**：只做了脚本逻辑冒烟测试，没有浏览器渲染/交互截图；未验证 Safari 兼容性与移动端布局。
 9. **多设备并发**：合并算法有单测，但没有两台真实设备同时同步的端到端测试。
+10. **应用内更新**：没有在真机上走完「检查 → 下载 → 授权安装未知应用 → 安装」；
+    FileProvider 授权、`ACTION_VIEW` 拉起安装器、真实网络下的 SHA-256 校验均未实测。
 
 > 发布流水线本身已经实测：`v1.0.0` 标签在真实仓库触发 `release.yml` 并成功发布，
 > 见第 2 节表格最后一行；`ci.yml` 已删除，推 `main` 不触发任何工作流。
@@ -148,3 +151,4 @@ adb shell dumpsys alarm | grep -A3 app.todo
 | Actions 页被 Dependabot 运行刷屏 | `dependabot.yml` 改为 `updates: []`；删除 `ci.yml`，推 main 不再触发任何工作流 |
 | 提醒设 10:55、邮件 11:02 才发出 | 接收器只用 `goAsync()`、没有 WakeLock：`onReceive` 返回后系统就释放唤醒锁，熄屏时 SMTP 被挂起，直到亮屏才继续。`ReminderReceiver` / `BootReceiver` 改为持 `PARTIAL_WAKE_LOCK`（60s / 30s 超时兜底），并在 `finally` 释放 |
 | 项目未声明开源协议 | 根目录加 Apache License 2.0 全文 `LICENSE`，同时打进 `app/src/main/assets/LICENSE`；README 第 14 节与关于页「开源协议」同步说明 |
+| 没有应用内更新，升级只能手动下载 | 新增 `data/update/`：GitHub Releases 检查（每天最多一次 + 手动）、带进度下载、按 release `digest` 校验 SHA-256、`FileProvider` 安装；未授予「安装未知应用」时跳系统设置页 |
