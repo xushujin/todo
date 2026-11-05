@@ -1,19 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Launcher foreground: a single matte tile with one raised check.
+
+  Everything is shaped by light from the top-left:
+    - the contact shadow is a radial falloff that reaches zero inside its own
+      bounds, so it fades out instead of ending on an edge;
+    - the tile is a rounded square whose fill runs from a lit top-left to a
+      slightly deeper bottom-right;
+    - a soft light pool sits on the tile's top-left;
+    - the check is the only focal point and the only colour.
+  No outlines, no strokes around the tile, no second light.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- contact shadow -->
+    <path android:pathData="M21.5,58.5 A36,36 0 1 1 93.5,58.5 A36,36 0 1 1 21.5,58.5 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="57.5"
+                android:centerY="58.5"
+                android:gradientRadius="36">
+                <item android:offset="0" android:color="#338A93A6" />
+                <item android:offset="0.62" android:color="#158A93A6" />
+                <item android:offset="1" android:color="#008A93A6" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- the tile -->
     <path
-        android:fillColor="#00000000"
-        android:pathData="M30,32 L78,32 A8,8 0 0 1 86,40 L86,68 A8,8 0 0 1 78,76 L30,76 A8,8 0 0 1 22,68 L22,40 A8,8 0 0 1 30,32 Z"
-        android:strokeColor="#4C5BD4"
-        android:strokeWidth="5" />
+        android:pathData="M48,24 L60,24 A24,24 0 0 1 84,48 L84,60 A24,24 0 0 1 60,84 L48,84 A24,24 0 0 1 24,60 L24,48 A24,24 0 0 1 48,24 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="24"
+                android:startY="24"
+                android:endX="84"
+                android:endY="84">
+                <item android:offset="0" android:color="#FFF6F8FC" />
+                <item android:offset="1" android:color="#FFE1E5ED" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- light pool on the tile's top-left -->
     <path
-        android:fillColor="#00000000"
-        android:pathData="M38,54 L48,64 L70,42"
-        android:strokeColor="#4C5BD4"
+        android:pathData="M48,24 L60,24 A24,24 0 0 1 84,48 L84,60 A24,24 0 0 1 60,84 L48,84 A24,24 0 0 1 24,60 L24,48 A24,24 0 0 1 48,24 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="43.2"
+                android:centerY="39.6"
+                android:gradientRadius="38.4">
+                <item android:offset="0" android:color="#80FFFFFF" />
+                <item android:offset="0.6" android:color="#1CFFFFFF" />
+                <item android:offset="1" android:color="#00FFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- the check: a soft contact shadow, then the raised shape itself -->
+    <path
+        android:pathData="M43.6,56.5 L52.1,64.5 L66.6,47.5"
+        android:strokeColor="#263F4767"
+        android:strokeWidth="8"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="6" />
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M43,55.5 L51.5,63.5 L66,46.5"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="43"
+                android:startY="55.5"
+                android:endX="66"
+                android:endY="46.5">
+                <item android:offset="0" android:color="#FF6E7694" />
+                <item android:offset="1" android:color="#FF585F76" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

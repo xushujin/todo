@@ -78,7 +78,8 @@ minSdk 30 / targetSdk 36 / debuggable false（apkanalyzer 实测）
 以下内容没有在真实环境跑过，代码正确性仅来自编译、静态阅读与上述单测，请勿当作"已通过"：
 
 1. **Android UI 渲染**：没有在真机或模拟器上安装运行，没有截图。拟态阴影、5 套主题、各页面布局、输入法避让、
-   深色主题下的对比度均未经视觉确认。
+   深色主题下的对比度均未经视觉确认。启动图标只用 PIL 按同一组坐标复刻渲染做过目视检查
+   （72px / 48px 可辨识），**Android vector 的实际渲染未在设备上确认**。
 2. **生物识别解锁**：`BiometricGate` 需要真实设备录入指纹/凭证；未验证系统对话框、取消/失败回调、
    `FLAG_SECURE` 效果，以及"设备无生物识别时不锁定"的分支（逻辑已写，未实机执行）。
 3. **真实 Git 仓库**：没有对 github.com / gitee.com / 自建 Gitea / GitLab 发起真实请求（无令牌、无外网账号）。
@@ -152,3 +153,4 @@ adb shell dumpsys alarm | grep -A3 app.todo
 | 提醒设 10:55、邮件 11:02 才发出 | 接收器只用 `goAsync()`、没有 WakeLock：`onReceive` 返回后系统就释放唤醒锁，熄屏时 SMTP 被挂起，直到亮屏才继续。`ReminderReceiver` / `BootReceiver` 改为持 `PARTIAL_WAKE_LOCK`（60s / 30s 超时兜底），并在 `finally` 释放 |
 | 项目未声明开源协议 | 根目录加 Apache License 2.0 全文 `LICENSE`，同时打进 `app/src/main/assets/LICENSE`；README 第 14 节与关于页「开源协议」同步说明 |
 | 没有应用内更新，升级只能手动下载 | 新增 `data/update/`：GitHub Releases 检查（每天最多一次 + 手动）、带进度下载、按 release `digest` 校验 SHA-256、`FileProvider` 安装；未授予「安装未知应用」时跳系统设置页 |
+| 启动图标是蓝色硬描边的扁平勾，与拟态风格不符 | 重做为柔光拟态：哑光圆角软石 + 微微凸起的勾，全部由渐变塑形（无描边、无第二光源、无文字）；新增 monochrome 主题图标层 |

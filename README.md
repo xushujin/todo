@@ -4,7 +4,7 @@
 时钟闹钟 + 邮件双通道提醒，生物识别应用锁，以及通过**自建 Git 仓库**完成的双向同步。
 仓库里还带一个纯静态 Web 页面，读取同一个 `data/todos.json` 做展示与操作。
 
-> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.1.0` · 支持 Android 11（API 30）– Android 16（API 36）
+> 应用英文名：**Todo** · 包名：`app.todo` · 版本：`1.1.1` · 支持 Android 11（API 30）– Android 16（API 36）
 > 开源协议：**Apache License 2.0**（见 [`LICENSE`](LICENSE)）
 
 ---
@@ -265,6 +265,8 @@ schema 字段、重新加载、过期版本令牌触发"重读 + 三方合并 + 
 * 拟态阴影由 `NeumorphicSurface` 用两层彩色阴影（左上高光 + 右下投影）实现，不使用模糊滤镜，硬件加速下稳定渲染
 * 按下反馈四层叠加：阴影压低 + 凹陷底色 + 整体缩放到 0.965 + 强调色淡染；按钮另触发一次轻触觉反馈。
   只靠阴影变化时，在相近底色上几乎看不出来，缩放与染色让"按下"一眼可辨
+* 启动图标是同一套语言：`drawable/ic_launcher_{background,foreground,monochrome}.xml` 全部用渐变塑形，
+  **没有描边**，只有一块哑光圆角软石和一个微微凸起的勾（单光源左上，勾是唯一焦点与唯一颜色）
 * 图标是 Canvas 手绘（`ui/components/TodoIcon.kt`），不引入图标库
 
 ---
